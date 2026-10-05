@@ -192,11 +192,9 @@ export function BookingFlow({
       <form onSubmit={submitKeepingValues(formAction)} className="flex flex-col gap-4">
         <input type="hidden" name="serviceId" value={service.id} />
         <input type="hidden" name="startsAt" value={slot.startsAt} />
-        <div aria-hidden className="absolute -left-[9999px]">
-          <label>
-            Website <input name="website" tabIndex={-1} autoComplete="off" />
-          </label>
-        </div>
+        {/* Spam trap: bots fill every input, people never see this one. It is display:none
+            and has a meaningless name so browser autofill leaves it alone. */}
+        <input type="text" name="hp_extra" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
         <Field label="Name">
           <Input name="name" autoComplete="name" required />
         </Field>

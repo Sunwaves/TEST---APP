@@ -23,8 +23,8 @@ function message(err: unknown): string {
 }
 
 export async function createOnlineBooking(slug: string, _prev: PublicFormState, fd: FormData): Promise<PublicFormState> {
-  // Honeypot: real people never see or fill this field.
-  if (field(fd, "website")) return { error: "Something went wrong. Please try again." };
+  // Spam trap: hidden from people and from browser autofill, so only bots fill it.
+  if (field(fd, "hp_extra")) return { error: "Something went wrong. Please try again." };
 
   let token: string | null = null;
   try {
