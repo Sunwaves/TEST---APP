@@ -3,6 +3,7 @@
 // then starts the app. Safe to run again: it never wipes existing data.
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync } from "node:fs";
+import { createServer } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,6 +22,21 @@ function run(command, args, label) {
 const [major] = process.versions.node.split(".").map(Number);
 if (major < 20) {
   console.error(`✖ Node.js ${process.versions.node} is too old. Install Node.js 22 from https://nodejs.org and try again.`);
+  process.exit(1);
+}
+
+// If an older copy is still running, the browser would keep talking to it (old code, old database client).
+const portFree = await new Promise((resolve) => {
+  const probe = createServer()
+    .once("error", () => resolve(false))
+    .once("listening", () => probe.close(() => resolve(true)))
+    .listen(Number(port));
+});
+if (!portFree) {
+  console.error(`✖ Port ${port} is already in use, probably by an older copy of this app.
+  Stop it first: go to the Terminal window where it is running and press Ctrl+C
+  (or close that window), then run npm start again.
+  To run a second copy instead, use a different port: PORT=3001 npm start`);
   process.exit(1);
 }
 
