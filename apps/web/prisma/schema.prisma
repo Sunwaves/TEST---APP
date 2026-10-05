@@ -17,6 +17,9 @@ model Business {
   timezone         String         @default("Europe/London")
   slotStepMinutes  Int            @default(15)
   minNoticeMinutes Int            @default(60)
+  maxAdvanceDays   Int            @default(60) // how far ahead clients can book online
+  phone            String?
+  address          String?
   createdAt        DateTime       @default(now())
   services         Service[]
   clients          Client[]
@@ -67,19 +70,21 @@ model WorkingHours {
 }
 
 model Appointment {
-  id         String   @id @default(cuid())
-  businessId String
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  serviceId  String
-  service    Service  @relation(fields: [serviceId], references: [id])
-  clientId   String
-  client     Client   @relation(fields: [clientId], references: [id])
-  startsAt   DateTime
-  endsAt     DateTime // includes the service buffer
-  status     String   @default("BOOKED") // BOOKED | COMPLETED | CANCELLED | NO_SHOW
-  source     String   @default("STAFF") // STAFF | ONLINE
-  notes      String?
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  startsAt    DateTime
+  endsAt      DateTime // includes the service buffer
+  status      String   @default("BOOKED") // BOOKED | COMPLETED | CANCELLED | NO_SHOW
+  source      String   @default("STAFF") // STAFF | ONLINE
+  notes       String?
+  // Unguessable token for the client's confirmation / manage-booking link.
+  manageToken String?  @unique
+  createdAt   DateTime @default(now())
 
   @@index([businessId, startsAt])
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, type ReactNode } from "react";
+import { startTransition, useActionState, useEffect, useRef, type FormEvent, type ReactNode } from "react";
 import type { FormState } from "@/app/dashboard/actions";
 import { buttonClass } from "./ui";
 
@@ -33,7 +33,7 @@ export function ActionForm({
   }, [state, resetOnSuccess]);
 
   return (
-    <form ref={formRef} action={formAction} className={className}>
+    <form ref={formRef} onSubmit={submitKeepingValues(formAction)} className={className}>
       {children}
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={pending} className={buttonClass[variant]}>
@@ -46,4 +46,16 @@ export function ActionForm({
       </div>
     </form>
   );
+}
+
+/**
+ * Submits through the action without React's automatic form reset,
+ * so typed values survive a validation or clash error.
+ */
+export function submitKeepingValues(action: (fd: FormData) => void) {
+  return (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const fd = new FormData(event.currentTarget);
+    startTransition(() => action(fd));
+  };
 }

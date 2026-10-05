@@ -1,4 +1,5 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import { randomBytes } from "node:crypto";
+import type { Business, Prisma, PrismaClient } from "@prisma/client";
 import { availableSlots } from "./availability";
 import { addMinutes, toZonedIsoDate, weekdayOf, zonedTimeToUtc } from "./time";
 
@@ -63,7 +64,7 @@ export async function bookAppointment(db: PrismaClient, businessId: string, inpu
 
     if (input.source === "ONLINE") {
       const date = toZonedIsoDate(startsAt, business.timezone);
-      const slots = await getSlots(tx, businessId, service.id, date, now);
+      const slots = await onlineSlots(tx, business, service.id, date, now);
       if (!slots.some((s) => s.getTime() === startsAt.getTime())) {
         throw new BookingError("That time is no longer available", 409);
       }
@@ -79,15 +80,67 @@ export async function bookAppointment(db: PrismaClient, businessId: string, inpu
       const client = await tx.client.findFirst({ where: { id: clientId, businessId } });
       if (!client) throw new BookingError("Client not found", 404);
     } else if (input.client) {
-      const created = await tx.client.create({ data: { ...input.client, businessId } });
-      clientId = created.id;
+      const returning = input.source === "ONLINE" ? await findReturningClient(tx, businessId, input.client) : null;
+      clientId = returning?.id ?? (await tx.client.create({ data: { ...input.client, businessId } })).id;
     } else {
       throw new BookingError("Provide clientId or client");
     }
 
     return tx.appointment.create({
-      data: { businessId, serviceId: service.id, clientId, startsAt, endsAt, notes: input.notes, source: input.source },
+      data: {
+        businessId,
+        serviceId: service.id,
+        clientId,
+        startsAt,
+        endsAt,
+        notes: input.notes,
+        source: input.source,
+        manageToken: newManageToken(),
+      },
       include: { service: true, client: true },
+    });
+  });
+}
+
+function newManageToken(): string {
+  return randomBytes(18).toString("base64url");
+}
+
+/** Online bookers are matched to an existing client by email, then phone, so history stays in one place. */
+async function findReturningClient(db: Db, businessId: string, client: { email?: string; phone?: string }) {
+  if (client.email) {
+    const byEmail = await db.client.findFirst({ where: { businessId, email: client.email } });
+    if (byEmail) return byEmail;
+  }
+  if (client.phone) return db.client.findFirst({ where: { businessId, phone: client.phone } });
+  return null;
+}
+
+/** The days clients may book online: today through `maxAdvanceDays` ahead, in the business timezone. */
+export function bookingWindow(business: Pick<Business, "timezone" | "maxAdvanceDays">, now = new Date()) {
+  const first = toZonedIsoDate(now, business.timezone);
+  const last = toZonedIsoDate(addMinutes(now, business.maxAdvanceDays * 24 * 60), business.timezone);
+  return { first, last };
+}
+
+/** Slots offered on the public booking page: like getSlots, but limited to the booking window. */
+export async function onlineSlots(db: Db, business: Business, serviceId: string, date: string, now = new Date()) {
+  const { first, last } = bookingWindow(business, now);
+  if (date < first || date > last) return [];
+  return getSlots(db, business.id, serviceId, date, now);
+}
+
+/** Client self-service cancellation through the manage link. Allowed until the appointment starts. */
+export async function cancelByToken(db: PrismaClient, token: string, now = new Date()) {
+  return db.$transaction(async (tx) => {
+    const appointment = await tx.appointment.findUnique({ where: { manageToken: token } });
+    if (!appointment) throw new BookingError("Booking not found", 404);
+    if (appointment.status !== "BOOKED") throw new BookingError("This booking can no longer be cancelled");
+    if (appointment.startsAt <= now) throw new BookingError("This appointment has already started");
+    return tx.appointment.update({
+      where: { id: appointment.id },
+      data: { status: "CANCELLED" },
+      include: { service: true, client: true, business: true },
     });
   });
 }

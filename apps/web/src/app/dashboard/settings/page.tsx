@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { updateBusiness } from "@/app/dashboard/actions";
 import { ActionForm } from "@/components/action-form";
 import { HoursEditor } from "@/components/hours-editor";
@@ -31,12 +32,29 @@ export default async function SettingsPage() {
     <div className="mx-auto max-w-3xl">
       <PageHeader title="Settings" />
       <div className="grid gap-6">
+        <Card title="Online booking page">
+          <p className="text-sm text-stone-600">Share this link with clients so they can book themselves:</p>
+          <p className="mt-2 flex flex-wrap items-center gap-3">
+            <code className="rounded bg-stone-100 px-2 py-1 text-sm">/book/{business.slug}</code>
+            <Link href={`/book/${business.slug}`} target="_blank" className="text-sm underline">
+              Open booking page
+            </Link>
+          </p>
+        </Card>
         <Card title="Business">
           <ActionForm action={updateBusiness}>
             <Field label="Business name">
               <Input name="name" defaultValue={business.name} required />
             </Field>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Address" hint="Shown on your booking page">
+                <Input name="address" defaultValue={business.address ?? ""} />
+              </Field>
+              <Field label="Phone" hint="Shown on your booking page">
+                <Input name="phone" type="tel" defaultValue={business.phone ?? ""} />
+              </Field>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Timezone">
                 <Select name="timezone" defaultValue={business.timezone}>
                   {timezones.map((tz) => (
@@ -66,6 +84,15 @@ export default async function SettingsPage() {
                   ].map(([m, label]) => (
                     <option key={m} value={m}>
                       {label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Book ahead" hint="How far ahead clients can book online">
+                <Select name="maxAdvanceDays" defaultValue={business.maxAdvanceDays}>
+                  {[7, 14, 30, 60, 90, 180, 365].map((d) => (
+                    <option key={d} value={d}>
+                      {d < 30 ? `${d / 7} week${d === 7 ? "" : "s"}` : d === 365 ? "1 year" : `${Math.round(d / 30)} month${d === 30 ? "" : "s"}`}
                     </option>
                   ))}
                 </Select>

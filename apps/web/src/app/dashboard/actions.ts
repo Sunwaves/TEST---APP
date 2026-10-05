@@ -186,17 +186,21 @@ export async function updateService(_prev: FormState, fd: FormData): Promise<For
 
 export async function updateBusiness(_prev: FormState, fd: FormData): Promise<FormState> {
   const business = await currentBusiness();
-  return run(() =>
-    prisma.business.update({
+  return run(() => {
+    const data = businessInput.parse({
+      name: field(fd, "name"),
+      timezone: field(fd, "timezone"),
+      slotStepMinutes: numberField(fd, "slotStepMinutes"),
+      minNoticeMinutes: numberField(fd, "minNoticeMinutes"),
+      maxAdvanceDays: numberField(fd, "maxAdvanceDays"),
+      phone: field(fd, "phone"),
+      address: field(fd, "address"),
+    });
+    return prisma.business.update({
       where: { id: business.id },
-      data: businessInput.parse({
-        name: field(fd, "name"),
-        timezone: field(fd, "timezone"),
-        slotStepMinutes: numberField(fd, "slotStepMinutes"),
-        minNoticeMinutes: numberField(fd, "minNoticeMinutes"),
-      }),
-    }),
-  );
+      data: { ...data, phone: data.phone ?? null, address: data.address ?? null },
+    });
+  });
 }
 
 /** Expects parallel `weekday`, `startTime`, `endTime` fields, one triple per opening window. */

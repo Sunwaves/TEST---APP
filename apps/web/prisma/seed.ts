@@ -1,4 +1,5 @@
 // Demo data: one salon with services, opening hours, clients and a few bookings.
+import { randomBytes } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { addMinutes, toZonedIsoDate, zonedTimeToUtc } from "../src/lib/time";
 
@@ -13,6 +14,8 @@ async function main() {
       name: "Goldie Test Salon",
       slug: "goldie-test-salon",
       timezone,
+      address: "12 Example Street, London",
+      phone: "+44 20 7946 0000",
       workingHours: {
         create: [1, 2, 3, 4, 5].flatMap((weekday) => [
           { weekday, startTime: "09:00", endTime: "13:00" },
@@ -39,7 +42,14 @@ async function main() {
   const book = (serviceId: string, clientId: string, time: string, minutes: number) => {
     const startsAt = zonedTimeToUtc(tomorrow, time, timezone);
     return prisma.appointment.create({
-      data: { businessId: business.id, serviceId, clientId, startsAt, endsAt: addMinutes(startsAt, minutes) },
+      data: {
+        businessId: business.id,
+        serviceId,
+        clientId,
+        startsAt,
+        endsAt: addMinutes(startsAt, minutes),
+        manageToken: randomBytes(18).toString("base64url"),
+      },
     });
   };
   await book(cut.id, ana.id, "10:00", 60);

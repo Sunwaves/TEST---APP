@@ -15,6 +15,12 @@ const endpoints = [
   ["PATCH", "/api/business", "Update name, timezone, slot interval, notice"],
   ["PUT", "/api/business/hours", "Replace weekly opening hours"],
   ["GET", "/api/availability?serviceId=&date=", "Bookable slots for a day"],
+  ["GET", "/api/public/:slug", "Public: salon, services, opening days"],
+  ["GET", "/api/public/:slug/availability?serviceId=&date=", "Public: free times"],
+  ["POST", "/api/public/:slug/bookings", "Public: book (returns a manage token)"],
+  ["GET", "/api/public/bookings/:token", "Public: view a booking"],
+  ["POST", "/api/public/bookings/:token/cancel", "Public: cancel a booking"],
+  ["GET", "/api/public/bookings/:token/ics", "Public: calendar file"],
 ];
 
 export default async function Home() {
@@ -26,11 +32,18 @@ export default async function Home() {
     <main className="mx-auto w-full max-w-3xl px-4 py-12">
       <h1 className="text-3xl font-semibold">Goldie Test App</h1>
       <p className="mt-2 text-stone-600">
-        Appointment booking for beauty professionals. The public booking page comes in Phase 3.
+        Appointment booking for beauty professionals.
       </p>
-      <Link href="/dashboard" className="mt-6 inline-block rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700">
-        Open dashboard
-      </Link>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link href="/dashboard" className="inline-block rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700">
+          Open dashboard
+        </Link>
+        {business && (
+          <Link href={`/book/${business.slug}`} className="inline-block rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium hover:bg-stone-100">
+            Open booking page
+          </Link>
+        )}
+      </div>
 
       <section className="mt-8 rounded-lg border border-stone-200 p-4">
         {business ? (
@@ -49,6 +62,7 @@ export default async function Home() {
       </section>
 
       <h2 className="mt-8 text-xl font-semibold">API</h2>
+      <p className="mt-1 text-sm text-stone-600">Staff endpoints act on the first business until logins arrive in Phase 4.</p>
       <ul className="mt-3 divide-y divide-stone-200 text-sm">
         {endpoints.map(([method, path, desc]) => (
           <li key={path} className="flex flex-col gap-1 py-2 sm:flex-row sm:gap-4">

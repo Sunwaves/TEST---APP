@@ -15,7 +15,18 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
             <span aria-hidden className="inline-block size-3 rounded-full bg-amber-400" />
             {business?.name ?? "Goldie Test App"}
           </Link>
-          <NavLinks />
+          <div className="flex items-center gap-2">
+            <NavLinks />
+            {business && (
+              <Link
+                href={`/book/${business.slug}`}
+                target="_blank"
+                className="hidden rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-stone-700 hover:bg-stone-100 md:inline-block"
+              >
+                Booking page ↗
+              </Link>
+            )}
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">

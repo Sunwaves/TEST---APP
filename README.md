@@ -36,14 +36,24 @@ Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. CI run
 | --- | --- | --- |
 | 1 | Foundation: data model, booking rules (slots, buffers, min notice, timezones, no double-booking), JSON API, seed data, tests, CI | Done |
 | 2 | Pro dashboard: day/week calendar, create/move/cancel appointments, clients, services, opening hours | Done |
-| 3 | Public booking page `/book/<slug>`: pick service, date, slot; client details; confirmation and cancel link | Next |
-| 4 | Accounts and auth, reminders (email/SMS via a provider, stubbed in dev), basic reports | |
+| 3 | Public booking page `/book/<slug>`: pick service, date, slot; client details; confirmation and cancel link | Done |
+| 4 | Accounts and auth, reminders (email/SMS via a provider, stubbed in dev), basic reports | Next |
 | 5 | End-to-end tests (Playwright), Postgres, deployment | |
 | 6 | Mobile app (Expo/React Native) using the same API | |
+
+## Online booking (`/book/<slug>`)
+
+Demo salon: `/book/goldie-test-salon`. Clients pick a service, a day and a free time, then leave their name and an email or phone number.
+
+- After booking they land on a private page (`/booking/<token>`) to view the booking, add it to their calendar (.ics) or cancel it (until it starts).
+- Returning clients are matched by email, then phone, so their history stays in one client record.
+- Online bookings show an **Online** tag on the staff calendar.
+- Settings control how far ahead clients can book and the address and phone shown on the page.
+- The same flow is available as a public JSON API under `/api/public/…` for the mobile app.
 
 ## Booking rules
 
 - Opening hours are stored per weekday in the business timezone; split shifts are supported.
 - A slot fits when the service **plus its buffer** fits inside one opening window, starts on the slot grid (`slotStepMinutes`), respects `minNoticeMinutes`, and does not overlap a booked or completed appointment.
-- Online bookings must land on an advertised slot. Staff bookings may be placed anywhere (including outside hours) as long as they don't overlap.
+- Online bookings must land on an advertised slot inside the booking window (`maxAdvanceDays`). Staff bookings may be placed anywhere (including outside hours) as long as they don't overlap.
 - Cancelled and no-show appointments free their time; reinstating one is refused if the slot has since been taken.

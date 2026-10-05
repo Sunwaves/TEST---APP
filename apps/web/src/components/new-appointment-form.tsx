@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { createAppointment } from "@/app/dashboard/actions";
 import { formatDuration, formatPrice } from "@/lib/format";
+import { submitKeepingValues } from "./action-form";
 import { buttonClass, Field, Input, Select, Textarea } from "./ui";
 
 interface ServiceOption {
@@ -59,7 +60,7 @@ export function NewAppointmentForm({
   const slots = !serviceId || !date ? { status: "idle" as const } : result?.key === key ? result : { status: "loading" as const };
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form onSubmit={submitKeepingValues(formAction)} className="flex flex-col gap-5">
       <Field label="Service">
         <Select name="serviceId" value={serviceId} onChange={(e) => setServiceId(e.target.value)} required>
           {services.map((s) => (

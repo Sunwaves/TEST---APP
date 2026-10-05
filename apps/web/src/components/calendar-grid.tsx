@@ -118,7 +118,10 @@ export function CalendarGrid({
                   >
                     <span className="font-semibold">{toZonedHHMM(item.appt.startsAt, timezone)}</span>{" "}
                     <span className="font-medium">{item.appt.client.name}</span>
-                    <span className="block truncate">{item.appt.service.name}</span>
+                    <span className="block truncate">
+                      {item.appt.service.name}
+                      {item.appt.source === "ONLINE" && <span className="ml-1 rounded bg-white/70 px-1 text-[10px] font-semibold uppercase">Online</span>}
+                    </span>
                   </Link>
                 ))}
               </div>

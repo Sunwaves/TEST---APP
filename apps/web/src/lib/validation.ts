@@ -53,7 +53,20 @@ export const businessInput = z.object({
   }, "Unknown timezone"),
   slotStepMinutes: z.number().int().min(5).max(120),
   minNoticeMinutes: z.number().int().min(0).max(14 * 24 * 60),
+  maxAdvanceDays: z.number().int().min(1).max(365),
+  phone: z.string().trim().max(30).optional(),
+  address: z.string().trim().max(200).optional(),
 });
+
+/** What a client submits from the public booking page. */
+export const onlineBookingInput = z.object({
+  serviceId: z.string().min(1, "Choose a service"),
+  startsAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)),
+  name: z.string().trim().min(1, "Enter your name").max(100),
+  email: z.email("Enter a valid email").transform((e) => e.toLowerCase()).optional(),
+  phone: z.string().trim().min(6, "Enter a valid phone number").max(30).optional(),
+  notes: z.string().trim().max(500).optional(),
+}).refine((v) => v.email || v.phone, { message: "Enter an email or phone number so the salon can reach you", path: ["email"] });
 
 export const availabilityQuery = z.object({
   serviceId: z.string().min(1),

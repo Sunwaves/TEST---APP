@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   bookAppointment,
   BookingError,
+  cancelByToken,
   getSlots,
   rescheduleAppointment,
   setWorkingHours,
@@ -116,5 +117,38 @@ describe("opening hours", () => {
     await setWorkingHours(db, businessId, [{ weekday: 1, startTime: "15:00", endTime: "16:00" }]);
     expect(times(await getSlots(db, businessId, serviceId, monday, now))).toEqual(["15:00"]);
     await rejects(setWorkingHours(db, businessId, [{ weekday: 1, startTime: "16:00", endTime: "15:00" }]), 400);
+  });
+});
+
+describe("online booking", () => {
+  it("gives every booking a unique manage token", async () => {
+    const a = await bookAppointment(db, businessId, { serviceId, startsAt: at("09:00"), source: "ONLINE", client: { name: "Ana" } }, now);
+    const b = await bookAppointment(db, businessId, { serviceId, startsAt: at("10:00"), source: "STAFF", client: { name: "Ben" } }, now);
+    expect(a.manageToken).toMatch(/^[A-Za-z0-9_-]{24}$/);
+    expect(a.manageToken).not.toBe(b.manageToken);
+  });
+
+  it("matches returning online clients by email, then phone", async () => {
+    const existing = await db.client.create({ data: { businessId, name: "Ana Pop", email: "ana@example.com", phone: "07700900001" } });
+    const byEmail = await bookAppointment(db, businessId, { serviceId, startsAt: at("09:00"), source: "ONLINE", client: { name: "Ana P", email: "ana@example.com" } }, now);
+    const byPhone = await bookAppointment(db, businessId, { serviceId, startsAt: at("10:00"), source: "ONLINE", client: { name: "A", phone: "07700900001" } }, now);
+    expect(byEmail.clientId).toBe(existing.id);
+    expect(byPhone.clientId).toBe(existing.id);
+    expect(await db.client.count({ where: { businessId } })).toBe(1);
+  });
+
+  it("refuses online bookings beyond the booking window", async () => {
+    await db.business.update({ where: { id: businessId }, data: { maxAdvanceDays: 3 } });
+    // `now` is 1 Dec; Monday 7 Dec is 6 days ahead.
+    await rejects(bookAppointment(db, businessId, { serviceId, startsAt: at("09:00"), source: "ONLINE", client: { name: "Ana" } }, now), 409);
+  });
+
+  it("lets the client cancel by token until the appointment starts", async () => {
+    const a = await bookAppointment(db, businessId, { serviceId, startsAt: at("09:00"), source: "ONLINE", client: { name: "Ana" } }, now);
+    await rejects(cancelByToken(db, a.manageToken!, new Date(`${monday}T09:00:00Z`)), 400);
+    await rejects(cancelByToken(db, "nope", now), 404);
+    const cancelled = await cancelByToken(db, a.manageToken!, now);
+    expect(cancelled.status).toBe("CANCELLED");
+    await rejects(cancelByToken(db, a.manageToken!, now), 400);
   });
 });
