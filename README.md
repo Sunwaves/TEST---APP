@@ -9,16 +9,27 @@ A test clone of [Goldie](https://heygoldie.com), the appointment-booking app for
 | `apps/web` | Next.js 16 web app and JSON API (TypeScript, Prisma, SQLite) |
 | `apps/mobile` | Mobile client (planned, Phase 6) |
 
-## Quick start
+## Run it on your computer
+
+Needs [Node.js 22+](https://nodejs.org) and Git.
 
 ```bash
-cd apps/web
-cp .env.example .env
-npm install
-npm run db:migrate   # create the SQLite database
-npm run db:seed      # demo salon, services, clients, bookings
-npm run dev          # http://localhost:3000 → Open dashboard
+git clone https://github.com/Sunwaves/TEST---APP.git
+cd TEST---APP
+git checkout claude/ecstatic-allen-4xhlji
+npm start
 ```
+
+`npm start` installs everything, creates the database, adds a demo salon on first run and starts the app. Then open:
+
+- Dashboard: http://localhost:3000/dashboard
+- Booking page: http://localhost:3000/book/goldie-test-salon
+
+To update later: `git pull`, then `npm start` again (your data is kept). To reset the demo data: `npm run reset-demo`.
+
+### For developers
+
+In `apps/web`: `npm run dev`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run db:migrate` (create a migration after editing the schema). CI runs lint, typecheck, tests and build on every push.
 
 ## Dashboard (`/dashboard`)
 

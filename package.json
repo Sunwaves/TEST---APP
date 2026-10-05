@@ -1,0 +1,8 @@
+{
+  "name": "goldie-test-app",
+  "private": true,
+  "scripts": {
+    "start": "node apps/web/scripts/local.mjs",
+    "reset-demo": "cd apps/web && npx prisma db seed"
+  }
+}
