@@ -1,5 +1,5 @@
 {
-  "name": "goldie-test-app",
+  "name": "bookme",
   "private": true,
   "scripts": {
     "start": "node apps/web/scripts/local.mjs",

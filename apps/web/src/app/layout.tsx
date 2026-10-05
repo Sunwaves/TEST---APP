@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Goldie Test App",
+  title: { default: "BookMe", template: "%s · BookMe" },
   description: "Appointment booking for beauty professionals",
 };
 

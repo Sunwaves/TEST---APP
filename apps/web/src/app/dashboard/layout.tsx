@@ -16,7 +16,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
           <div className="flex items-center justify-between gap-3">
             <Link href="/dashboard/calendar" className="flex items-center gap-2 font-semibold">
               <span aria-hidden className="inline-block size-3 rounded-full bg-amber-400" />
-              {user?.business.name ?? "Goldie Test App"}
+              {user?.business.name ?? "BookMe"}
             </Link>
             {user && (
               <form action={logout} className="lg:hidden">

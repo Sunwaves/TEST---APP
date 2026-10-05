@@ -34,6 +34,7 @@ export function publicBooking(a: Appointment & { service: Service; business: Bus
 export function bookingIcs(a: Parameters<typeof publicBooking>[0]) {
   const b = publicBooking(a);
   return buildIcs({
+    // Kept from before the BookMe rename: calendars match updates to events already added by this ID.
     uid: `${a.id}@goldie-test-app`,
     start: new Date(b.startsAt),
     end: new Date(b.endsAt),

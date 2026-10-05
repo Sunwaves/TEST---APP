@@ -1,6 +1,6 @@
-# @goldie/web
+# @bookme/web
 
-Next.js app and JSON API for the Goldie test app. See the [root README](../../README.md) for setup and the roadmap.
+Next.js app and JSON API for BookMe. See the [root README](../../README.md) for setup and the roadmap.
 
 - `prisma/schema.prisma` — data model
 - `src/lib/availability.ts` — pure slot calculation

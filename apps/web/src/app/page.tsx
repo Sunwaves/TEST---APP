@@ -10,7 +10,7 @@ export default async function Home() {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-16 text-center">
       <span aria-hidden className="mx-auto mb-4 block size-12 rounded-full bg-amber-400" />
-      <h1 className="text-3xl font-semibold">Goldie Test App</h1>
+      <h1 className="text-3xl font-semibold">BookMe</h1>
       <p className="mt-3 text-stone-600">
         Appointment booking for beauty professionals: a calendar, client records, an online booking page, reminders and reports.
       </p>

@@ -1,6 +1,6 @@
-# Goldie Test App
+# BookMe
 
-A test clone of [Goldie](https://heygoldie.com), the appointment-booking app for beauty professionals: services, clients, a calendar, a public booking page, reminders and reports.
+Appointment booking for beauty professionals: services, clients, a calendar, a public booking page, reminders and reports. Inspired by [Goldie](https://heygoldie.com).
 
 ## Layout
 

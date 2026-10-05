@@ -1,8 +1,8 @@
-# Deploying the Goldie Test App
+# Deploying BookMe
 
 The app runs on **Vercel** (hosting) with a **Neon** Postgres database. Total setup is about 15 minutes of clicking; no command line needed.
 
-You get a free address like `https://goldie-test-app.vercel.app`. A custom domain can be added later (step 6).
+You get a free address like `https://bookme.vercel.app`. A custom domain can be added later (step 6).
 
 ## 1. Create the Vercel project
 
@@ -30,7 +30,7 @@ You get a free address like `https://goldie-test-app.vercel.app`. A custom domai
 
 ## 3. Tell the app its address
 
-1. On the project's overview, copy the **Domains** address, e.g. `https://goldie-test-app.vercel.app`.
+1. On the project's overview, copy the **Domains** address, e.g. `https://bookme.vercel.app`.
 2. **Settings → Environment Variables** → add `APP_URL` = that address (no trailing slash), for Production.
 3. **Deployments → ⋯ → Redeploy** once more, so links in messages use the right address.
 
