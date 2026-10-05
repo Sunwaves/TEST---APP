@@ -32,17 +32,22 @@ if (!existsSync(join(web, ".env"))) {
 run("npm", ["install", "--no-audit", "--no-fund"], "Installing dependencies (first time takes a minute)");
 run("npx", ["prisma", "migrate", "deploy"], "Updating the database");
 
-// Seed demo data only if the database has no business yet.
+// Seed demo data only if the database is empty; add the demo login to older databases that have none.
 const check = spawnSync(
   process.execPath,
-  ["-e", "const{PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.business.count().then(n=>{console.log(n);return p.$disconnect()})"],
+  [
+    "-e",
+    "const{PrismaClient}=require('@prisma/client');const p=new PrismaClient();Promise.all([p.business.count(),p.user.count()]).then(([b,u])=>{console.log(JSON.stringify({b,u}));return p.$disconnect()})",
+  ],
   { cwd: web, encoding: "utf8" },
 );
-if (check.stdout.trim() === "0") run("npx", ["prisma", "db", "seed"], "Adding demo salon data");
+const counts = JSON.parse(check.stdout.trim() || '{"b":0,"u":0}');
+if (counts.b === 0) run("npx", ["prisma", "db", "seed"], "Adding demo salon data");
+else if (counts.u === 0) run("npx", ["tsx", "prisma/demo-user.ts"], "Adding the demo login to your existing salon");
 
 console.log(`
 ✔ Ready. Open these in your browser:
-   Dashboard:     http://localhost:${port}/dashboard
+   Dashboard:     http://localhost:${port}/dashboard   (demo login: demo@goldie.test / demo1234)
    Booking page:  http://localhost:${port}/book/goldie-test-salon
    (Press Ctrl+C here to stop.)
 `);

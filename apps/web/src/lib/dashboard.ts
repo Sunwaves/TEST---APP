@@ -1,8 +1,15 @@
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { currentBusiness } from "./api";
+import { getCurrentUser } from "./session";
 
-/** For dashboard pages: opts out of build-time prerendering, then loads the business. */
-export async function dashboardBusiness() {
+/** For dashboard pages: renders per request and sends logged-out visitors to the login page. */
+export async function dashboardUser() {
   await connection();
-  return currentBusiness();
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  return user;
+}
+
+export async function dashboardBusiness() {
+  return (await dashboardUser()).business;
 }

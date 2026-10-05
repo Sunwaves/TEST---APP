@@ -1,15 +1,12 @@
 import { z } from "zod";
 import { BookingError } from "./booking";
-import { prisma } from "./db";
+import { getCurrentUser } from "./session";
 
-/**
- * The business the dashboard acts on. Until auth lands (a later phase),
- * this app runs a single business: the first one in the database.
- */
+/** The logged-in user's business. Every staff page, action and API route goes through this check. */
 export async function currentBusiness() {
-  const business = await prisma.business.findFirst({ orderBy: { createdAt: "asc" } });
-  if (!business) throw new BookingError("No business set up. Run `npm run db:seed`.", 500);
-  return business;
+  const user = await getCurrentUser();
+  if (!user) throw new BookingError("Please log in", 401);
+  return user.business;
 }
 
 export function searchParamsObject(url: string) {

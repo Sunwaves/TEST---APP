@@ -11,20 +11,84 @@ datasource db {
 }
 
 model Business {
-  id               String         @id @default(cuid())
-  name             String
-  slug             String         @unique // public booking page: /book/<slug>
-  timezone         String         @default("Europe/London")
-  slotStepMinutes  Int            @default(15)
-  minNoticeMinutes Int            @default(60)
-  maxAdvanceDays   Int            @default(60) // how far ahead clients can book online
-  phone            String?
-  address          String?
-  createdAt        DateTime       @default(now())
-  services         Service[]
-  clients          Client[]
-  appointments     Appointment[]
-  workingHours     WorkingHours[]
+  id                   String         @id @default(cuid())
+  name                 String
+  slug                 String         @unique // public booking page: /book/<slug>
+  timezone             String         @default("Europe/London")
+  slotStepMinutes      Int            @default(15)
+  minNoticeMinutes     Int            @default(60)
+  maxAdvanceDays       Int            @default(60) // how far ahead clients can book online
+  phone                String?
+  address              String?
+  // Notifications
+  notifyEmail          String? // where new-booking / cancellation alerts go
+  remindersEnabled     Boolean        @default(true)
+  reminderHoursBefore  Int            @default(24)
+  confirmationTemplate String? // null = built-in default
+  reminderTemplate     String?
+  cancellationTemplate String?
+  rescheduleTemplate   String?
+  createdAt            DateTime       @default(now())
+  services             Service[]
+  clients              Client[]
+  appointments         Appointment[]
+  workingHours         WorkingHours[]
+  users                User[]
+  messages             Message[]
+}
+
+model User {
+  id           String          @id @default(cuid())
+  email        String          @unique // stored lowercase
+  name         String
+  passwordHash String
+  businessId   String
+  business     Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt    DateTime        @default(now())
+  sessions     Session[]
+  resets       PasswordReset[]
+}
+
+// Login sessions. Only a SHA-256 hash of the token is stored; the token itself lives in the cookie.
+model Session {
+  id        String   @id // token hash
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PasswordReset {
+  id        String    @id // token hash
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+// Every email/SMS the app sends (or simulates), plus scheduled reminders.
+model Message {
+  id            String       @id @default(cuid())
+  businessId    String
+  business      Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  kind          String // CONFIRMATION | REMINDER | CANCELLATION | RESCHEDULE | NEW_BOOKING_ALERT | CANCELLATION_ALERT | PASSWORD_RESET
+  channel       String // EMAIL | SMS
+  recipient     String // email address or phone number
+  subject       String?
+  body          String
+  status        String       @default("QUEUED") // QUEUED | SENT | FAILED | SKIPPED
+  error         String?
+  sendAt        DateTime     @default(now())
+  sentAt        DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([status, sendAt])
+  @@index([businessId, createdAt])
 }
 
 model Service {
@@ -70,21 +134,22 @@ model WorkingHours {
 }
 
 model Appointment {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   serviceId   String
-  service     Service  @relation(fields: [serviceId], references: [id])
+  service     Service   @relation(fields: [serviceId], references: [id])
   clientId    String
-  client      Client   @relation(fields: [clientId], references: [id])
+  client      Client    @relation(fields: [clientId], references: [id])
   startsAt    DateTime
   endsAt      DateTime // includes the service buffer
-  status      String   @default("BOOKED") // BOOKED | COMPLETED | CANCELLED | NO_SHOW
-  source      String   @default("STAFF") // STAFF | ONLINE
+  status      String    @default("BOOKED") // BOOKED | COMPLETED | CANCELLED | NO_SHOW
+  source      String    @default("STAFF") // STAFF | ONLINE
   notes       String?
   // Unguessable token for the client's confirmation / manage-booking link.
-  manageToken String?  @unique
-  createdAt   DateTime @default(now())
+  manageToken String?   @unique
+  createdAt   DateTime  @default(now())
+  messages    Message[]
 
   @@index([businessId, startsAt])
 }

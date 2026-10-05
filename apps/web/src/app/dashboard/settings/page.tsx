@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { updateBusiness } from "@/app/dashboard/actions";
+import { updateBusiness, updateNotifications } from "@/app/dashboard/actions";
 import { ActionForm } from "@/components/action-form";
 import { HoursEditor } from "@/components/hours-editor";
-import { Card, Field, Input, PageHeader, Select } from "@/components/ui";
+import { Card, Field, Input, PageHeader, Select, Textarea } from "@/components/ui";
 import { dashboardBusiness } from "@/lib/dashboard";
 import { prisma } from "@/lib/db";
+import { DEFAULT_TEMPLATES, PLACEHOLDERS, TEMPLATE_LABELS, type TemplateKind } from "@/lib/messages/templates";
 
 const TIMEZONES = [
   "Europe/London",
@@ -103,6 +104,51 @@ export default async function SettingsPage() {
 
         <Card title="Opening hours">
           <HoursEditor initial={hours} />
+        </Card>
+
+        <Card title="Notifications">
+          <ActionForm action={updateNotifications}>
+            <Field label="Send me booking alerts at" hint="New online bookings and client cancellations. Leave empty to turn alerts off.">
+              <Input name="notifyEmail" type="email" defaultValue={business.notifyEmail ?? ""} />
+            </Field>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <label className="flex items-center gap-2 text-sm sm:pb-2">
+                <input type="checkbox" name="remindersEnabled" defaultChecked={business.remindersEnabled} className="size-4 accent-stone-900" />
+                Send clients a reminder
+              </label>
+              <Field label="How long before">
+                <Select name="reminderHoursBefore" defaultValue={business.reminderHoursBefore}>
+                  {[2, 4, 12, 24, 48, 72].map((h) => (
+                    <option key={h} value={h}>
+                      {h < 24 ? `${h} hours` : `${h / 24} day${h === 24 ? "" : "s"}`}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <div className="border-t border-stone-200 pt-4">
+              <p className="text-sm font-medium">Message templates</p>
+              <p className="mt-1 text-xs text-stone-500">
+                Sent by email and SMS (when the client has them). Leave a box empty to use the default shown in grey. Placeholders:{" "}
+                {Object.entries(PLACEHOLDERS).map(([key, desc], i) => (
+                  <span key={key} title={desc}>
+                    {i > 0 && ", "}
+                    <code className="rounded bg-stone-100 px-1">{`{${key}}`}</code>
+                  </span>
+                ))}
+              </p>
+            </div>
+            {(Object.keys(DEFAULT_TEMPLATES) as TemplateKind[]).map((kind) => (
+              <Field key={kind} label={TEMPLATE_LABELS[kind]}>
+                <Textarea
+                  name={`${kind}Template`}
+                  rows={2}
+                  placeholder={DEFAULT_TEMPLATES[kind]}
+                  defaultValue={business[`${kind}Template`] ?? ""}
+                />
+              </Field>
+            ))}
+          </ActionForm>
         </Card>
       </div>
     </div>

@@ -164,7 +164,8 @@ export async function updateAppointment(
       if (clash) throw new BookingError("That time overlaps another appointment", 409);
     }
 
-    return tx.appointment.update({ where: { id }, data, include: { service: true, client: true } });
+    const updated = await tx.appointment.update({ where: { id }, data, include: { service: true, client: true } });
+    return { ...updated, previousStatus: existing.status };
   });
 }
 

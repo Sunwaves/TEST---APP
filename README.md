@@ -22,7 +22,7 @@ npm start
 
 `npm start` installs everything, creates the database, adds a demo salon on first run and starts the app. Then open:
 
-- Dashboard: http://localhost:3000/dashboard
+- Dashboard: http://localhost:3000/dashboard (demo login: `demo@goldie.test` / `demo1234`, or create your own salon at `/signup`)
 - Booking page: http://localhost:3000/book/goldie-test-salon
 
 To update later: `git pull`, then `npm start` again (your data is kept). To reset the demo data: `npm run reset-demo`.
@@ -48,9 +48,25 @@ Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. CI run
 | 1 | Foundation: data model, booking rules (slots, buffers, min notice, timezones, no double-booking), JSON API, seed data, tests, CI | Done |
 | 2 | Pro dashboard: day/week calendar, create/move/cancel appointments, clients, services, opening hours | Done |
 | 3 | Public booking page `/book/<slug>`: pick service, date, slot; client details; confirmation and cancel link | Done |
-| 4 | Accounts and auth, reminders (email/SMS via a provider, stubbed in dev), basic reports | Next |
-| 5 | End-to-end tests (Playwright), Postgres, deployment | |
+| 4 | Logins and separate salons, confirmations/reminders/alerts (simulated, Resend/Twilio-ready), reports | Done |
+| 5 | End-to-end tests (Playwright), Postgres, deployment | Next |
 | 6 | Mobile app (Expo/React Native) using the same API | |
+
+## Accounts
+
+- `/signup` creates an owner account and a new salon (own services, clients, calendar and booking page). `/login`, log out, and `/forgot-password` with a one-hour reset link.
+- Sessions are database-backed: an httpOnly cookie for the browser, or `POST /api/auth/login` → `Authorization: Bearer <token>` for API clients.
+- Every staff page, server action and staff API route checks the session and only touches that salon's data.
+
+## Messages
+
+Clients get a confirmation, a reminder (default 24 h before), and notices when an appointment is moved or cancelled, by email and/or SMS depending on the contact details they gave. The salon gets an email alert for new online bookings and client cancellations. Templates and reminder timing are editable in Settings.
+
+Sending is **simulated** by default: every message is recorded in **Dashboard → Messages** exactly as it would be sent. Real sending turns on per channel with environment variables (see `apps/web/.env.example`): Resend for email, Twilio for SMS. Reminders are delivered by a one-minute timer on a long-running server, or by `GET /api/cron/messages` with `CRON_SECRET` on serverless hosts.
+
+## Reports
+
+`/dashboard/reports`: revenue (completed appointments), still-booked value, no-show rate, new vs returning clients, revenue per day/week, appointments by status and source, top services and top clients, for any date range.
 
 ## Online booking (`/book/<slug>`)
 

@@ -12,6 +12,8 @@ import {
   updateAppointment,
 } from "@/lib/booking";
 import { prisma } from "@/lib/db";
+import { notifyAfterResponse, notifyBooked, notifyRescheduled, notifyStatusChange } from "@/lib/messages";
+import { appOrigin } from "@/lib/session";
 import { toZonedIsoDate, zonedTimeToUtc } from "@/lib/time";
 import {
   appointmentStatus,
@@ -84,7 +86,7 @@ export async function createAppointment(_prev: FormState, fd: FormData): Promise
     const startsAt = startsAtFrom(fd, business.timezone);
     date = toZonedIsoDate(startsAt, business.timezone);
     const clientId = field(fd, "clientId");
-    await bookAppointment(prisma, business.id, {
+    const appointment = await bookAppointment(prisma, business.id, {
       serviceId: z.string().min(1, "Choose a service").parse(field(fd, "serviceId") ?? ""),
       startsAt,
       notes: field(fd, "notes"),
@@ -99,6 +101,8 @@ export async function createAppointment(_prev: FormState, fd: FormData): Promise
             }),
           }),
     });
+    const origin = await appOrigin();
+    notifyAfterResponse(() => notifyBooked(prisma, appointment.id, origin));
   });
   if (state.error) return state;
   redirect(`/dashboard/calendar?date=${date}`);
@@ -106,10 +110,13 @@ export async function createAppointment(_prev: FormState, fd: FormData): Promise
 
 export async function setAppointmentStatus(_prev: FormState, fd: FormData): Promise<FormState> {
   const business = await currentBusiness();
-  return run(
-    () => updateAppointment(prisma, business.id, field(fd, "id") ?? "", { status: appointmentStatus.parse(field(fd, "status")) }),
-    "Status updated",
-  );
+  return run(async () => {
+    const updated = await updateAppointment(prisma, business.id, field(fd, "id") ?? "", {
+      status: appointmentStatus.parse(field(fd, "status")),
+    });
+    const origin = await appOrigin();
+    notifyAfterResponse(() => notifyStatusChange(prisma, updated.id, updated.previousStatus, updated.status, origin));
+  }, "Status updated");
 }
 
 export async function saveAppointmentNotes(_prev: FormState, fd: FormData): Promise<FormState> {
@@ -119,10 +126,11 @@ export async function saveAppointmentNotes(_prev: FormState, fd: FormData): Prom
 
 export async function rescheduleAppointment(_prev: FormState, fd: FormData): Promise<FormState> {
   const business = await currentBusiness();
-  return run(
-    () => moveAppointment(prisma, business.id, field(fd, "id") ?? "", startsAtFrom(fd, business.timezone)),
-    "Appointment moved",
-  );
+  return run(async () => {
+    const moved = await moveAppointment(prisma, business.id, field(fd, "id") ?? "", startsAtFrom(fd, business.timezone));
+    const origin = await appOrigin();
+    notifyAfterResponse(() => notifyRescheduled(prisma, moved.id, origin));
+  }, "Appointment moved");
 }
 
 // Clients
@@ -215,4 +223,42 @@ export async function saveWorkingHours(_prev: FormState, fd: FormData): Promise<
     );
     return setWorkingHours(prisma, business.id, hours);
   }, "Opening hours saved");
+}
+
+export async function updateNotifications(_prev: FormState, fd: FormData): Promise<FormState> {
+  const business = await currentBusiness();
+  return run(() => {
+    const data = z
+      .object({
+        notifyEmail: z.email("Enter a valid notification email").optional(),
+        remindersEnabled: z.boolean(),
+        reminderHoursBefore: z.number().int().min(1).max(7 * 24),
+        confirmationTemplate: z.string().max(1000).optional(),
+        reminderTemplate: z.string().max(1000).optional(),
+        cancellationTemplate: z.string().max(1000).optional(),
+        rescheduleTemplate: z.string().max(1000).optional(),
+      })
+      .parse({
+        notifyEmail: field(fd, "notifyEmail"),
+        remindersEnabled: fd.get("remindersEnabled") === "on",
+        reminderHoursBefore: numberField(fd, "reminderHoursBefore"),
+        confirmationTemplate: field(fd, "confirmationTemplate"),
+        reminderTemplate: field(fd, "reminderTemplate"),
+        cancellationTemplate: field(fd, "cancellationTemplate"),
+        rescheduleTemplate: field(fd, "rescheduleTemplate"),
+      });
+    // Blank fields mean "no alerts" / "use the default template".
+    return prisma.business.update({
+      where: { id: business.id },
+      data: {
+        notifyEmail: data.notifyEmail ?? null,
+        remindersEnabled: data.remindersEnabled,
+        reminderHoursBefore: data.reminderHoursBefore,
+        confirmationTemplate: data.confirmationTemplate ?? null,
+        reminderTemplate: data.reminderTemplate ?? null,
+        cancellationTemplate: data.cancellationTemplate ?? null,
+        rescheduleTemplate: data.rescheduleTemplate ?? null,
+      },
+    });
+  });
 }

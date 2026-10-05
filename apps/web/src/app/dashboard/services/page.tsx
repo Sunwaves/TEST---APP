@@ -7,8 +7,9 @@ import { prisma } from "@/lib/db";
 import { formatDuration, formatPrice } from "@/lib/format";
 import { ServiceFields } from "./fields";
 
-export default async function ServicesPage() {
+export default async function ServicesPage({ searchParams }: PageProps<"/dashboard/services">) {
   const business = await dashboardBusiness();
+  const welcome = (await searchParams).welcome === "1";
   const services = await prisma.service.findMany({
     where: { businessId: business.id },
     include: { _count: { select: { appointments: true } } },
@@ -18,6 +19,21 @@ export default async function ServicesPage() {
   return (
     <>
       <PageHeader title="Services" subtitle="What clients can book, how long it takes and what it costs." />
+      {welcome && (
+        <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-medium">Welcome to {business.name}!</p>
+          <p className="mt-1">
+            Start by adding the services you offer. Then check your opening hours in{" "}
+            <Link href="/dashboard/settings" className="underline">
+              Settings
+            </Link>{" "}
+            and share your booking page:{" "}
+            <Link href={`/book/${business.slug}`} target="_blank" className="font-medium underline">
+              /book/{business.slug}
+            </Link>
+          </p>
+        </div>
+      )}
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xs">
           {services.length ? (

@@ -2,6 +2,8 @@
 import { randomBytes } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { addMinutes, toZonedIsoDate, zonedTimeToUtc } from "../src/lib/time";
+import { DEMO_PASSWORD, ensureDemoUser } from "./demo-user";
+import { DEMO_EMAIL } from "../src/lib/accounts";
 
 const prisma = new PrismaClient();
 
@@ -25,13 +27,15 @@ async function main() {
     },
   });
 
+  await ensureDemoUser(prisma, business.id);
+
   const [cut, color, nails] = await Promise.all([
     prisma.service.create({ data: { businessId: business.id, name: "Haircut", durationMinutes: 45, bufferMinutes: 15, priceCents: 3500 } }),
     prisma.service.create({ data: { businessId: business.id, name: "Full colour", description: "Includes toner and blow-dry", durationMinutes: 120, bufferMinutes: 15, priceCents: 9500 } }),
     prisma.service.create({ data: { businessId: business.id, name: "Gel manicure", durationMinutes: 60, priceCents: 3000 } }),
   ]);
 
-  const [ana, ben] = await Promise.all([
+  const [ana, ben, cara] = await Promise.all([
     prisma.client.create({ data: { businessId: business.id, name: "Ana Pop", phone: "+44 7700 900001", email: "ana@example.com" } }),
     prisma.client.create({ data: { businessId: business.id, name: "Ben Ionescu", phone: "+44 7700 900002", notes: "Prefers short appointments" } }),
     prisma.client.create({ data: { businessId: business.id, name: "Cara Smith", email: "cara@example.com" } }),
@@ -54,9 +58,41 @@ async function main() {
   };
   await book(cut.id, ana.id, "10:00", 60);
   await book(color.id, ben.id, "14:00", 135);
-  void nails;
 
-  console.log(`Seeded "${business.name}" (booking page: /book/${business.slug})`);
+  // Eight weeks of history so Reports has something to show.
+  const clients = [ana, ben, cara];
+  const services = [
+    { s: cut, minutes: 60 },
+    { s: color, minutes: 135 },
+    { s: nails, minutes: 60 },
+  ];
+  const statuses = ["COMPLETED", "COMPLETED", "COMPLETED", "COMPLETED", "COMPLETED", "COMPLETED", "NO_SHOW", "CANCELLED"];
+  const times = ["09:00", "11:30", "14:00", "16:00"];
+  let n = 0;
+  for (let daysAgo = 56; daysAgo >= 1; daysAgo--) {
+    const day = toZonedIsoDate(addMinutes(new Date(), -daysAgo * 24 * 60), timezone);
+    const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
+    if (weekday === 0) continue; // closed Sundays
+    const perDay = 1 + ((daysAgo * 7) % 3);
+    for (let i = 0; i < perDay; i++, n++) {
+      const { s: service, minutes } = services[(daysAgo + i) % services.length];
+      const startsAt = zonedTimeToUtc(day, times[i], timezone);
+      await prisma.appointment.create({
+        data: {
+          businessId: business.id,
+          serviceId: service.id,
+          clientId: clients[(n * 5 + i) % clients.length].id,
+          startsAt,
+          endsAt: addMinutes(startsAt, minutes),
+          status: statuses[n % statuses.length],
+          source: n % 3 === 0 ? "ONLINE" : "STAFF",
+          manageToken: randomBytes(18).toString("base64url"),
+        },
+      });
+    }
+  }
+
+  console.log(`Seeded "${business.name}" (booking page: /book/${business.slug}, login: ${DEMO_EMAIL} / ${DEMO_PASSWORD})`);
 }
 
 main()

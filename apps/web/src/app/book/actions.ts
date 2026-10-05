@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { bookAppointment, BookingError, cancelByToken } from "@/lib/booking";
 import { prisma } from "@/lib/db";
+import { notifyAfterResponse, notifyBooked, notifyCancelled } from "@/lib/messages";
+import { appOrigin } from "@/lib/session";
 import { businessBySlug } from "@/lib/public";
 import { onlineBookingInput } from "@/lib/validation";
 
@@ -39,6 +41,8 @@ export async function createOnlineBooking(slug: string, _prev: PublicFormState, 
     });
     const appointment = await bookAppointment(prisma, business.id, { serviceId, startsAt, notes, client, source: "ONLINE" });
     token = appointment.manageToken;
+    const origin = await appOrigin();
+    notifyAfterResponse(() => notifyBooked(prisma, appointment.id, origin));
   } catch (err) {
     return { error: message(err) };
   }
@@ -47,7 +51,9 @@ export async function createOnlineBooking(slug: string, _prev: PublicFormState, 
 
 export async function cancelOnlineBooking(token: string): Promise<PublicFormState> {
   try {
-    await cancelByToken(prisma, token);
+    const cancelled = await cancelByToken(prisma, token);
+    const origin = await appOrigin();
+    notifyAfterResponse(() => notifyCancelled(prisma, cancelled.id, origin, { byClient: true }));
   } catch (err) {
     return { error: message(err) };
   }
