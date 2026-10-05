@@ -6,6 +6,7 @@ import { CancelBooking } from "@/components/cancel-booking";
 import { buttonClass } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { formatDateTime, formatDuration, formatPrice } from "@/lib/format";
+import { FloatingThemeToggle } from "@/components/theme-toggle";
 
 export const metadata: Metadata = {
   title: "Your booking",
@@ -35,6 +36,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
 
   return (
     <div className="min-h-full bg-gradient-to-b from-amber-50 to-stone-50">
+      <FloatingThemeToggle />
       <div className="mx-auto w-full max-w-xl px-4 py-8 sm:py-12">
         <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
           <div className="mb-6 text-center">

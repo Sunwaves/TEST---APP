@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { logout } from "@/app/(auth)/actions";
 import { NavLinks } from "@/components/nav-links";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentUser } from "@/lib/session";
 
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
@@ -19,9 +20,12 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
               {user?.business.name ?? "BookMe"}
             </Link>
             {user && (
-              <form action={logout} className="lg:hidden">
-                <button className="text-sm text-stone-600 underline">Log out</button>
-              </form>
+              <div className="flex items-center gap-1 lg:hidden">
+                <ThemeToggle />
+                <form action={logout}>
+                  <button className="text-sm text-stone-600 underline">Log out</button>
+                </form>
+              </div>
             )}
           </div>
           {user && (
@@ -34,6 +38,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
               >
                 Booking page ↗
               </Link>
+              <ThemeToggle className="hidden lg:inline-flex" />
               <form action={logout} className="hidden lg:block">
                 <button className="rounded-md px-3 py-1.5 text-sm whitespace-nowrap text-stone-600 hover:bg-stone-100" title={user.email}>
                   Log out

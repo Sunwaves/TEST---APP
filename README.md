@@ -56,6 +56,11 @@ Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. CI run
 | 5 | Postgres, rate limiting and security headers, browser tests in CI, Vercel + Neon deployment | Done (deploy steps in [DEPLOY.md](DEPLOY.md)) |
 | 6 | Mobile app (Expo/React Native) using the same API | |
 
+## Currency and theme
+
+- All prices are in Romanian lei (RON), shown as "1.234,50 RON". Price inputs accept "120", "99,50" or "99.50". The currency is one constant (`CURRENCY` in `apps/web/src/lib/format.ts`).
+- Light/dark theme switch on every page (moon/sun button). It follows the device setting until chosen; the choice is kept per browser in a cookie, and the server renders it straight away, so there is no flash. Dark mode remaps the colour palette in `globals.css`.
+
 ## Security
 
 - Rate limits (stored in Postgres, so they hold across server instances) on login, sign-up, password reset, online booking and cancelling.

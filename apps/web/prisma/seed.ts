@@ -41,9 +41,9 @@ async function main() {
   await ensureDemoUser(prisma, business.id);
 
   const [cut, color, nails] = await Promise.all([
-    prisma.service.create({ data: { businessId: business.id, name: "Haircut", durationMinutes: 45, bufferMinutes: 15, priceCents: 3500 } }),
-    prisma.service.create({ data: { businessId: business.id, name: "Full colour", description: "Includes toner and blow-dry", durationMinutes: 120, bufferMinutes: 15, priceCents: 9500 } }),
-    prisma.service.create({ data: { businessId: business.id, name: "Gel manicure", durationMinutes: 60, priceCents: 3000 } }),
+    prisma.service.create({ data: { businessId: business.id, name: "Haircut", durationMinutes: 45, bufferMinutes: 15, priceCents: 12000 } }),
+    prisma.service.create({ data: { businessId: business.id, name: "Full colour", description: "Includes toner and blow-dry", durationMinutes: 120, bufferMinutes: 15, priceCents: 35000 } }),
+    prisma.service.create({ data: { businessId: business.id, name: "Gel manicure", durationMinutes: 60, priceCents: 13000 } }),
   ]);
 
   const [ana, ben, cara] = await Promise.all([

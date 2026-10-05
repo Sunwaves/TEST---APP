@@ -18,8 +18,8 @@ export function ServiceFields({ service }: { service?: Service }) {
         <Field label="Buffer" hint="Clean-up after">
           <Input name="bufferMinutes" type="number" min={0} step={5} defaultValue={service?.bufferMinutes ?? 0} />
         </Field>
-        <Field label="Price (£)">
-          <Input name="price" inputMode="decimal" defaultValue={service ? (service.priceCents / 100).toFixed(2) : ""} required />
+        <Field label="Price (RON)">
+          <Input name="price" inputMode="decimal" defaultValue={service ? (service.priceCents / 100).toFixed(2).replace(".", ",") : ""} required />
         </Field>
       </div>
     </>

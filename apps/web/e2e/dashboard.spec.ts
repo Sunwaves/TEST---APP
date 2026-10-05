@@ -78,7 +78,7 @@ test("services: add, then hide from booking", async ({ page }) => {
   const add = page.locator("section", { hasText: "Add service" });
   await add.getByLabel("Name").fill("Brow tint");
   await add.getByLabel("Minutes").fill("20");
-  await add.getByLabel("Price (£)").fill("15");
+  await add.getByLabel("Price (RON)").fill("60");
   await add.getByRole("button", { name: "Add service" }).click();
   await expect(page.getByText("Service added")).toBeVisible();
   await page.getByRole("link", { name: /Brow tint/ }).click();

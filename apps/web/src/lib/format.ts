@@ -1,7 +1,38 @@
 import { addMinutes, toZonedIsoDate, zonedTimeToUtc } from "./time";
 
-export function formatPrice(cents: number, currency = "GBP"): string {
-  return new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(cents / 100);
+// All prices are in Romanian lei, stored as bani (1/100 RON) in the *Cents fields.
+export const CURRENCY = "RON";
+const PRICE_LOCALE = "ro-RO";
+
+/** "35,00 RON"; with `whole`, "35 RON" (chart axes). */
+export function formatPrice(cents: number, { whole = false }: { whole?: boolean } = {}): string {
+  return new Intl.NumberFormat(PRICE_LOCALE, {
+    style: "currency",
+    currency: CURRENCY,
+    ...(whole ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : {}),
+  }).format(cents / 100);
+}
+
+/**
+ * Reads a typed price into bani. Accepts Romanian and English styles:
+ * "35", "35,5", "35.50", "1.234,50", "1,234.50", "35 RON". Returns null if it isn't a price.
+ */
+export function parsePrice(input: string): number | null {
+  let s = input.replace(/[^\d.,]/g, "");
+  if (!/\d/.test(s)) return null;
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+  if (lastComma >= 0 && lastDot >= 0) {
+    // Both used: the later one is the decimal separator, the other groups thousands.
+    const decimal = lastComma > lastDot ? "," : ".";
+    s = s.replaceAll(decimal === "," ? "." : ",", "").replace(decimal, ".");
+  } else if (lastComma >= 0) {
+    s = /,\d{3}$/.test(s) && s.split(",").length > 2 ? s.replaceAll(",", "") : s.replace(",", ".");
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+    s = s.replaceAll(".", ""); // "1.234" = one thousand two hundred thirty-four (Romanian grouping)
+  }
+  if (!/^\d+(\.\d{0,2})?$/.test(s)) return null;
+  return Math.round(Number(s) * 100);
 }
 
 export function formatDuration(minutes: number): string {

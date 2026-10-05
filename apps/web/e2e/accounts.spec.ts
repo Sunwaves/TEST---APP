@@ -40,7 +40,7 @@ test("sign up creates a separate salon", async ({ page, browser }) => {
   const add = page.locator("section", { hasText: "Add service" });
   await add.getByLabel("Name").fill("Gel nails");
   await add.getByLabel("Minutes").fill("45");
-  await add.getByLabel("Price (£)").fill("28");
+  await add.getByLabel("Price (RON)").fill("95,50");
   await add.getByRole("button", { name: "Add service" }).click();
   await expect(page.getByText("Service added")).toBeVisible();
 
@@ -49,6 +49,7 @@ test("sign up creates a separate salon", async ({ page, browser }) => {
   await expect(page.getByText("Ana Pop")).toHaveCount(0);
   await page.goto("/book/nora-s-nail-studio");
   await expect(page.getByRole("button", { name: /Gel nails/ })).toBeVisible();
+  await expect(page.getByText(/^95,50\sRON$/)).toBeVisible(); // typed with a comma, shown in lei
 
   // Can't open the demo salon's appointments.
   const demo = await browser.newPage();

@@ -14,6 +14,7 @@ import {
 import { prisma } from "@/lib/db";
 import { notifyAfterResponse, notifyBooked, notifyRescheduled, notifyStatusChange } from "@/lib/messages";
 import { appOrigin } from "@/lib/session";
+import { parsePrice } from "@/lib/format";
 import { toZonedIsoDate, zonedTimeToUtc } from "@/lib/time";
 import {
   appointmentStatus,
@@ -44,10 +45,11 @@ function numberField(fd: FormData, key: string): number | undefined {
   return value === undefined ? undefined : Number(value);
 }
 
-/** "£35.50" / "35.5" -> 3550 */
+/** "35,50" / "35.5" / "35 RON" -> 3550 bani; anything unreadable is left for validation to reject. */
 function priceField(fd: FormData, key: string): number | undefined {
-  const value = field(fd, key)?.replace(/[^0-9.]/g, "");
-  return value ? Math.round(Number(value) * 100) : undefined;
+  const value = field(fd, key);
+  if (value === undefined) return undefined;
+  return parsePrice(value) ?? Number.NaN;
 }
 
 function errorMessage(err: unknown): string {

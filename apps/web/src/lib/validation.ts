@@ -9,7 +9,7 @@ export const serviceInput = z.object({
   description: z.string().trim().max(500).optional(),
   durationMinutes: z.number().int().min(5).max(8 * 60),
   bufferMinutes: z.number().int().min(0).max(4 * 60).default(0),
-  priceCents: z.number().int().min(0),
+  priceCents: z.number({ error: "Enter a price, e.g. 120 or 99,50" }).int().min(0, "Enter a price, e.g. 120 or 99,50"),
   active: z.boolean().default(true),
 });
 

@@ -8,6 +8,7 @@ import { bookingWindow } from "@/lib/booking";
 import { prisma } from "@/lib/db";
 import { imageUrl } from "@/lib/images";
 import { describeDay, openNow, WEEKDAYS_MONDAY_FIRST } from "@/lib/opening";
+import { FloatingThemeToggle } from "@/components/theme-toggle";
 
 async function load(slug: string) {
   await connection();
@@ -40,6 +41,7 @@ export default async function SalonPage({ params }: PageProps<"/book/[slug]">) {
 
   return (
     <div className="min-h-full bg-gradient-to-b from-amber-50 to-stone-50">
+      <FloatingThemeToggle />
       <div className="mx-auto w-full max-w-4xl pb-10 sm:px-4 sm:pt-8">
         <SalonHeader
           name={business.name}

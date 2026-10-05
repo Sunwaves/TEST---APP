@@ -29,7 +29,7 @@ export function Avatar({ url, name, className = "size-24 sm:size-28" }: { url: s
       {url ? (
         <Image src={url} alt={`${name} profile photo`} fill unoptimized className="object-cover" sizes="112px" />
       ) : (
-        <span aria-hidden className="flex size-full items-center justify-center text-2xl font-semibold text-amber-950 sm:text-3xl">
+        <span aria-hidden className="flex size-full items-center justify-center text-2xl font-semibold text-amber-950 sm:text-3xl dark:text-[oklch(22%_0.05_50)]">
           {initials(name)}
         </span>
       )}

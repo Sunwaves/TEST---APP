@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { prisma } from "@/lib/db";
 import { DEMO_EMAIL } from "@/lib/accounts";
+import { FloatingThemeToggle } from "@/components/theme-toggle";
 
 export default async function Home() {
   await connection();
@@ -9,6 +10,7 @@ export default async function Home() {
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-16 text-center">
+      <FloatingThemeToggle />
       <span aria-hidden className="mx-auto mb-4 block size-12 rounded-full bg-amber-400" />
       <h1 className="text-3xl font-semibold">BookMe</h1>
       <p className="mt-3 text-stone-600">

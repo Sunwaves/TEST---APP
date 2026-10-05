@@ -28,12 +28,12 @@ export function RevenueChart({ buckets }: { buckets: Bucket[] }) {
 
   return (
     <div>
-      <div className="relative ml-14 h-56">
+      <div className="relative ml-16 h-56">
         {/* Gridlines + y labels */}
         {ticks.map((t) => (
           <div key={t} className="absolute inset-x-0 border-t border-stone-200" style={{ bottom: `${(t / max) * 100}%` }}>
-            <span className="absolute -left-14 w-12 -translate-y-1/2 text-right text-xs text-stone-500 tabular-nums">
-              {formatPrice(t).replace(/\.00$/, "")}
+            <span className="absolute -left-16 w-14 -translate-y-1/2 text-right text-xs text-stone-500 tabular-nums">
+              {formatPrice(t, { whole: true })}
             </span>
           </div>
         ))}
@@ -78,7 +78,7 @@ export function RevenueChart({ buckets }: { buckets: Bucket[] }) {
       </div>
 
       {/* X labels, thinned so they never collide */}
-      <div className="mt-2 ml-14 flex gap-0.5">
+      <div className="mt-2 ml-16 flex gap-0.5">
         {buckets.map((b, i) => (
           <span key={b.key} className="min-w-0 flex-1 text-center text-[11px] whitespace-nowrap text-stone-500">
             {i % everyNarrow === 0 && <span className="sm:hidden">{b.label.replace("w/c ", "")}</span>}

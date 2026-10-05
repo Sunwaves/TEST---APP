@@ -71,7 +71,7 @@ test("reports show revenue, a chart with tooltip, and a table view", async ({ pa
   await login(page);
   await page.goto("/dashboard/reports");
   await expect(page.getByText("Revenue per day")).toBeVisible();
-  await expect(page.locator("p.text-2xl").first()).toHaveText(/£[1-9]/);
+  await expect(page.locator("p.text-2xl").first()).toHaveText(/^[1-9][\d.]*,\d\d\sRON$/);
   await page.locator("button[aria-label*='completed']").nth(10).hover();
   await expect(page.locator("[role=status]").filter({ hasText: "completed" })).toBeVisible();
   await page.getByRole("link", { name: "Last 90 days" }).click();
