@@ -44,3 +44,11 @@ next-env.d.ts
 # sqlite
 *.db
 *.db-journal
+
+# local Postgres data (npm start)
+.pgdata/
+
+# Playwright
+/e2e/.auth/
+/test-results/
+/playwright-report/

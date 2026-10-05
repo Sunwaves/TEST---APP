@@ -8,6 +8,7 @@ import { BookingError } from "@/lib/booking";
 import { prisma } from "@/lib/db";
 import { deliverDue, queuePasswordReset } from "@/lib/messages/notify";
 import { deliveryMode } from "@/lib/messages/drivers";
+import { clientIp, enforceLimit } from "@/lib/limits";
 import { appOrigin, endSession, startSession } from "@/lib/session";
 
 export interface AuthFormState {
@@ -28,7 +29,24 @@ function safeNext(value: string): string {
   return value.startsWith("/dashboard") ? value : "/dashboard";
 }
 
+/** Runs a rate limit check and turns a 429 into a form error. */
+async function limited(check: () => Promise<void>): Promise<AuthFormState | null> {
+  try {
+    await check();
+    return null;
+  } catch (err) {
+    if (err instanceof BookingError) return { error: err.message };
+    throw err;
+  }
+}
+
 export async function login(_prev: AuthFormState, fd: FormData): Promise<AuthFormState> {
+  const ip = await clientIp();
+  const blocked = await limited(async () => {
+    await enforceLimit("loginIp", ip);
+    await enforceLimit("login", `${ip}:${field(fd, "email")}`);
+  });
+  if (blocked) return blocked;
   const user = await checkLogin(prisma, field(fd, "email"), String(fd.get("password") ?? ""));
   if (!user) return { error: "Wrong email or password." };
   await startSession(user.id);
@@ -45,6 +63,9 @@ export async function signup(_prev: AuthFormState, fd: FormData): Promise<AuthFo
     })
     .safeParse({ name: field(fd, "name"), salonName: field(fd, "salonName"), email: field(fd, "email"), password: String(fd.get("password") ?? "") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const ip = await clientIp();
+  const blocked = await limited(() => enforceLimit("signup", ip));
+  if (blocked) return blocked;
 
   try {
     const user = await createAccount(prisma, parsed.data);
@@ -64,6 +85,9 @@ export async function logout() {
 export async function requestPasswordReset(_prev: AuthFormState, fd: FormData): Promise<AuthFormState> {
   const email = field(fd, "email");
   if (!z.email().safeParse(email).success) return { error: "Enter a valid email." };
+  const ip = await clientIp();
+  const blocked = await limited(() => enforceLimit("passwordReset", ip, email));
+  if (blocked) return blocked;
 
   const reset = await createPasswordReset(prisma, email);
   let devLink: string | undefined;

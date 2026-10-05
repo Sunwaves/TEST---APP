@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { deliverDue } from "@/lib/messages/notify";
+import { pruneRateLimits } from "@/lib/rate-limit";
 
 /**
  * Delivers due messages (reminders). For hosts with cron jobs, e.g. Vercel Cron:
@@ -14,5 +15,7 @@ export async function GET(req: Request) {
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return Response.json(await deliverDue(prisma));
+  const result = await deliverDue(prisma);
+  await pruneRateLimits(prisma);
+  return Response.json(result);
 }

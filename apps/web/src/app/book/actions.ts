@@ -5,6 +5,7 @@ import { z } from "zod";
 import { bookAppointment, BookingError, cancelByToken } from "@/lib/booking";
 import { prisma } from "@/lib/db";
 import { notifyAfterResponse, notifyBooked, notifyCancelled } from "@/lib/messages";
+import { clientIp, enforceLimit } from "@/lib/limits";
 import { appOrigin } from "@/lib/session";
 import { businessBySlug } from "@/lib/public";
 import { onlineBookingInput } from "@/lib/validation";
@@ -30,6 +31,7 @@ export async function createOnlineBooking(slug: string, _prev: PublicFormState, 
 
   let token: string | null = null;
   try {
+    await enforceLimit("booking", await clientIp());
     const business = await businessBySlug(slug);
     const { serviceId, startsAt, notes, ...client } = onlineBookingInput.parse({
       serviceId: field(fd, "serviceId"),
@@ -51,6 +53,7 @@ export async function createOnlineBooking(slug: string, _prev: PublicFormState, 
 
 export async function cancelOnlineBooking(token: string): Promise<PublicFormState> {
   try {
+    await enforceLimit("cancel", await clientIp());
     const cancelled = await cancelByToken(prisma, token);
     const origin = await appOrigin();
     notifyAfterResponse(() => notifyCancelled(prisma, cancelled.id, origin, { byClient: true }));

@@ -1,4 +1,5 @@
 import { currentBusiness, handle, searchParamsObject } from "@/lib/api";
+import { clientSearch } from "@/lib/clients";
 import { prisma } from "@/lib/db";
 import { clientInput } from "@/lib/validation";
 
@@ -8,7 +9,7 @@ export const GET = handle(async (req: Request) => {
   const clients = await prisma.client.findMany({
     where: {
       businessId: business.id,
-      ...(q ? { OR: [{ name: { contains: q } }, { phone: { contains: q } }, { email: { contains: q } }] } : {}),
+      ...clientSearch(q),
     },
     orderBy: { name: "asc" },
   });

@@ -3,6 +3,7 @@ import { createClient } from "@/app/dashboard/actions";
 import { ActionForm } from "@/components/action-form";
 import { buttonClass, Card, Field, Input, PageHeader, Textarea } from "@/components/ui";
 import { dashboardBusiness } from "@/lib/dashboard";
+import { clientSearch } from "@/lib/clients";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 
@@ -13,7 +14,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/dashboar
   const clients = await prisma.client.findMany({
     where: {
       businessId: business.id,
-      ...(q ? { OR: [{ name: { contains: q } }, { phone: { contains: q } }, { email: { contains: q } }] } : {}),
+      ...clientSearch(q),
     },
     include: {
       appointments: { where: { status: { in: ["BOOKED", "COMPLETED"] } }, orderBy: { startsAt: "desc" }, take: 1 },

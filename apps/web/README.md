@@ -8,5 +8,6 @@ Next.js app and JSON API for the Goldie test app. See the [root README](../../RE
 - `src/app/api/**` — JSON route handlers (for the booking page and future mobile app)
 - `src/app/dashboard/**` — staff dashboard pages; `actions.ts` holds its server actions
 - `src/components/**` — shared UI (calendar grid, forms)
+- `e2e/**` — Playwright browser tests (`npm run test:e2e`)
+- `scripts/local.mjs` — what `npm start` runs; `scripts/local-db.mjs` — the private local Postgres
 
-Until auth arrives (Phase 4), the API acts on the first business in the database.

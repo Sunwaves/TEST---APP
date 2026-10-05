@@ -109,7 +109,7 @@ function newManageToken(): string {
 /** Online bookers are matched to an existing client by email, then phone, so history stays in one place. */
 async function findReturningClient(db: Db, businessId: string, client: { email?: string; phone?: string }) {
   if (client.email) {
-    const byEmail = await db.client.findFirst({ where: { businessId, email: client.email } });
+    const byEmail = await db.client.findFirst({ where: { businessId, email: { equals: client.email, mode: "insensitive" } } });
     if (byEmail) return byEmail;
   }
   if (client.phone) return db.client.findFirst({ where: { businessId, phone: client.phone } });

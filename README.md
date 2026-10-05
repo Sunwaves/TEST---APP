@@ -20,7 +20,7 @@ git checkout claude/ecstatic-allen-4xhlji
 npm start
 ```
 
-`npm start` installs everything, creates the database, adds a demo salon on first run and starts the app. Then open:
+`npm start` installs everything, starts a private local Postgres (nothing to install), creates the database, adds a demo salon on first run and starts the app. Then open:
 
 - Dashboard: http://localhost:3000/dashboard (demo login: `demo@goldie.test` / `demo1234`, or create your own salon at `/signup`)
 - Booking page: http://localhost:3000/book/goldie-test-salon
@@ -29,7 +29,11 @@ To update later: `git pull`, then `npm start` again (your data is kept). To rese
 
 ### For developers
 
-In `apps/web`: `npm run dev`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run db:migrate` (create a migration after editing the schema). CI runs lint, typecheck, tests and build on every push.
+In `apps/web`: `npm run lint`, `npm run typecheck`, `npm test` (unit + database tests on a throwaway Postgres database), `npm run test:e2e` (production build + Playwright browser tests), `npm run db:migrate` (create a migration after editing the schema; needs the local database running, e.g. via `npm start`). CI runs all of these against a Postgres service on every push.
+
+## Deploying
+
+See **[DEPLOY.md](DEPLOY.md)**: Vercel + Neon, about 15 minutes, with a free `*.vercel.app` address.
 
 ## Dashboard (`/dashboard`)
 
@@ -49,8 +53,14 @@ Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. CI run
 | 2 | Pro dashboard: day/week calendar, create/move/cancel appointments, clients, services, opening hours | Done |
 | 3 | Public booking page `/book/<slug>`: pick service, date, slot; client details; confirmation and cancel link | Done |
 | 4 | Logins and separate salons, confirmations/reminders/alerts (simulated, Resend/Twilio-ready), reports | Done |
-| 5 | End-to-end tests (Playwright), Postgres, deployment | Next |
+| 5 | Postgres, rate limiting and security headers, browser tests in CI, Vercel + Neon deployment | Done (deploy steps in [DEPLOY.md](DEPLOY.md)) |
 | 6 | Mobile app (Expo/React Native) using the same API | |
+
+## Security
+
+- Rate limits (stored in Postgres, so they hold across server instances) on login, sign-up, password reset, online booking and cancelling.
+- Security headers: no framing, no MIME sniffing, strict referrer policy (private booking links don't leak), HTTPS-only.
+- Passwords hashed with scrypt; only hashes of session and reset tokens are stored.
 
 ## Accounts
 

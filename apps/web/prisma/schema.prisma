@@ -1,13 +1,14 @@
-// Data model for the Goldie-style booking app.
-// SQLite locally; switch `provider` to "postgresql" for hosted deploys.
+// Data model for the Goldie-style booking app (Postgres).
+// Locally `npm start` runs a private Postgres; hosted deploys use Neon.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled connection for the app
+  directUrl = env("DATABASE_URL_UNPOOLED") // direct connection for migrations (Neon provides both)
 }
 
 model Business {
@@ -152,4 +153,14 @@ model Appointment {
   messages    Message[]
 
   @@index([businessId, startsAt])
+}
+
+// Fixed-window counters for rate limiting (login attempts, sign-ups, online bookings...).
+// Kept in the database so limits hold across all server instances.
+model RateLimit {
+  key     String   @id // e.g. "login:203.0.113.7"
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
 }

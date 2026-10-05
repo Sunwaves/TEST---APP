@@ -1,14 +1,23 @@
 // Demo data: one salon with services, opening hours, clients and a few bookings.
 import { randomBytes } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
+import { addDays } from "../src/lib/format";
 import { addMinutes, toZonedIsoDate, zonedTimeToUtc } from "../src/lib/time";
 import { DEMO_PASSWORD, ensureDemoUser } from "./demo-user";
 import { DEMO_EMAIL } from "../src/lib/accounts";
 
 const prisma = new PrismaClient();
 
+/** First Monday–Friday after `isoDate`. The browser tests use the same rule. */
+function nextWeekday(isoDate: string): string {
+  let day = addDays(isoDate, 1);
+  while ([0, 6].includes(new Date(`${day}T00:00:00Z`).getUTCDay())) day = addDays(day, 1);
+  return day;
+}
+
 async function main() {
   await prisma.business.deleteMany();
+  await prisma.rateLimit.deleteMany(); // a demo reset also clears login/booking attempt counters
 
   const timezone = "Europe/London";
   const business = await prisma.business.create({
@@ -41,8 +50,8 @@ async function main() {
     prisma.client.create({ data: { businessId: business.id, name: "Cara Smith", email: "cara@example.com" } }),
   ]);
 
-  // A couple of bookings tomorrow so the calendar isn't empty.
-  const tomorrow = toZonedIsoDate(addMinutes(new Date(), 24 * 60), timezone);
+  // A couple of bookings on the next weekday (Mon–Fri) so the calendar isn't empty.
+  const tomorrow = nextWeekday(toZonedIsoDate(new Date(), timezone));
   const book = (serviceId: string, clientId: string, time: string, minutes: number) => {
     const startsAt = zonedTimeToUtc(tomorrow, time, timezone);
     return prisma.appointment.create({
