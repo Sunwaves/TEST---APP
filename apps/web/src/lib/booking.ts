@@ -1,0 +1,116 @@
+import type { Prisma, PrismaClient } from "@prisma/client";
+import { availableSlots } from "./availability";
+import { addMinutes, toZonedIsoDate, weekdayOf, zonedTimeToUtc } from "./time";
+
+type Db = PrismaClient | Prisma.TransactionClient;
+
+export class BookingError extends Error {
+  constructor(message: string, readonly status: number = 400) {
+    super(message);
+  }
+}
+
+/** Appointments that still block time on the calendar. */
+const BLOCKING = { status: { in: ["BOOKED", "COMPLETED"] } };
+
+export async function getSlots(db: Db, businessId: string, serviceId: string, date: string, now = new Date()) {
+  const business = await db.business.findUniqueOrThrow({ where: { id: businessId } });
+  const service = await db.service.findFirst({ where: { id: serviceId, businessId, active: true } });
+  if (!service) throw new BookingError("Service not found", 404);
+
+  const windows = await db.workingHours.findMany({ where: { businessId, weekday: weekdayOf(date) } });
+  const dayStart = zonedTimeToUtc(date, "00:00", business.timezone);
+  const dayEnd = addMinutes(dayStart, 24 * 60 + 60); // a little slack for DST-length days
+  const busy = await db.appointment.findMany({
+    where: { businessId, ...BLOCKING, startsAt: { lt: dayEnd }, endsAt: { gt: dayStart } },
+    select: { startsAt: true, endsAt: true },
+  });
+
+  return availableSlots({
+    date,
+    timezone: business.timezone,
+    windows,
+    busy: busy.map((a) => ({ start: a.startsAt, end: a.endsAt })),
+    durationMinutes: service.durationMinutes,
+    bufferMinutes: service.bufferMinutes,
+    stepMinutes: business.slotStepMinutes,
+    minNoticeMinutes: business.minNoticeMinutes,
+    now,
+  });
+}
+
+export interface BookInput {
+  serviceId: string;
+  startsAt: Date;
+  notes?: string;
+  clientId?: string;
+  client?: { name: string; phone?: string; email?: string; notes?: string };
+  source: "STAFF" | "ONLINE";
+}
+
+/**
+ * Creates an appointment. Online bookings must land on an advertised slot;
+ * staff bookings may be placed anywhere that doesn't double-book.
+ */
+export async function bookAppointment(db: PrismaClient, businessId: string, input: BookInput, now = new Date()) {
+  return db.$transaction(async (tx) => {
+    const business = await tx.business.findUniqueOrThrow({ where: { id: businessId } });
+    const service = await tx.service.findFirst({ where: { id: input.serviceId, businessId, active: true } });
+    if (!service) throw new BookingError("Service not found", 404);
+
+    const startsAt = input.startsAt;
+    const endsAt = addMinutes(startsAt, service.durationMinutes + service.bufferMinutes);
+
+    if (input.source === "ONLINE") {
+      const date = toZonedIsoDate(startsAt, business.timezone);
+      const slots = await getSlots(tx, businessId, service.id, date, now);
+      if (!slots.some((s) => s.getTime() === startsAt.getTime())) {
+        throw new BookingError("That time is no longer available", 409);
+      }
+    } else {
+      const clash = await tx.appointment.findFirst({
+        where: { businessId, ...BLOCKING, startsAt: { lt: endsAt }, endsAt: { gt: startsAt } },
+      });
+      if (clash) throw new BookingError("That time overlaps another appointment", 409);
+    }
+
+    let clientId = input.clientId;
+    if (clientId) {
+      const client = await tx.client.findFirst({ where: { id: clientId, businessId } });
+      if (!client) throw new BookingError("Client not found", 404);
+    } else if (input.client) {
+      const created = await tx.client.create({ data: { ...input.client, businessId } });
+      clientId = created.id;
+    } else {
+      throw new BookingError("Provide clientId or client");
+    }
+
+    return tx.appointment.create({
+      data: { businessId, serviceId: service.id, clientId, startsAt, endsAt, notes: input.notes, source: input.source },
+      include: { service: true, client: true },
+    });
+  });
+}
+
+export async function updateAppointment(
+  db: PrismaClient,
+  businessId: string,
+  id: string,
+  data: { status?: string; notes?: string },
+) {
+  return db.$transaction(async (tx) => {
+    const existing = await tx.appointment.findFirst({ where: { id, businessId } });
+    if (!existing) throw new BookingError("Appointment not found", 404);
+
+    // Reinstating a cancelled/no-show appointment must not double-book the slot.
+    const blocking = BLOCKING.status.in;
+    if (data.status && blocking.includes(data.status) && !blocking.includes(existing.status)) {
+      const clash = await tx.appointment.findFirst({
+        where: { businessId, id: { not: id }, ...BLOCKING, startsAt: { lt: existing.endsAt }, endsAt: { gt: existing.startsAt } },
+      });
+      if (clash) throw new BookingError("That time overlaps another appointment", 409);
+    }
+
+    return tx.appointment.update({ where: { id }, data, include: { service: true, client: true } });
+  });
+}

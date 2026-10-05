@@ -1,0 +1,85 @@
+// Data model for the Goldie-style booking app.
+// SQLite locally; switch `provider` to "postgresql" for hosted deploys.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id               String         @id @default(cuid())
+  name             String
+  slug             String         @unique // public booking page: /book/<slug>
+  timezone         String         @default("Europe/London")
+  slotStepMinutes  Int            @default(15)
+  minNoticeMinutes Int            @default(60)
+  createdAt        DateTime       @default(now())
+  services         Service[]
+  clients          Client[]
+  appointments     Appointment[]
+  workingHours     WorkingHours[]
+}
+
+model Service {
+  id              String        @id @default(cuid())
+  businessId      String
+  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  durationMinutes Int
+  bufferMinutes   Int           @default(0) // clean-up time blocked after the service
+  priceCents      Int
+  active          Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  appointments    Appointment[]
+
+  @@index([businessId])
+}
+
+model Client {
+  id           String        @id @default(cuid())
+  businessId   String
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String?
+  email        String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  appointments Appointment[]
+
+  @@index([businessId])
+}
+
+// Weekly opening hours, expressed in the business timezone.
+model WorkingHours {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  weekday    Int // 0 = Sunday ... 6 = Saturday
+  startTime  String // "HH:MM"
+  endTime    String // "HH:MM"
+
+  @@index([businessId, weekday])
+}
+
+model Appointment {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  serviceId  String
+  service    Service  @relation(fields: [serviceId], references: [id])
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id])
+  startsAt   DateTime
+  endsAt     DateTime // includes the service buffer
+  status     String   @default("BOOKED") // BOOKED | COMPLETED | CANCELLED | NO_SHOW
+  source     String   @default("STAFF") // STAFF | ONLINE
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, startsAt])
+}
