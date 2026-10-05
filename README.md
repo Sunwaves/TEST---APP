@@ -17,8 +17,16 @@ cp .env.example .env
 npm install
 npm run db:migrate   # create the SQLite database
 npm run db:seed      # demo salon, services, clients, bookings
-npm run dev          # http://localhost:3000
+npm run dev          # http://localhost:3000 → Open dashboard
 ```
+
+## Dashboard (`/dashboard`)
+
+- **Calendar**: day and week views in the business timezone, opening hours shaded, overlapping bookings side by side, expected revenue for the range.
+- **Appointments**: book with suggested free slots (or any time), existing or new client; mark completed / no-show / cancelled, restore, reschedule, notes.
+- **Clients**: search, add, edit, visit history, total spent, no-shows.
+- **Services**: add, edit price/duration/buffer, hide from booking.
+- **Settings**: business name, timezone, slot interval, minimum notice, weekly opening hours with breaks.
 
 Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. CI runs all four on every push.
 
@@ -27,8 +35,8 @@ Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. CI run
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 1 | Foundation: data model, booking rules (slots, buffers, min notice, timezones, no double-booking), JSON API, seed data, tests, CI | Done |
-| 2 | Pro dashboard: day/week calendar, create/move/cancel appointments, clients, services, opening hours | Next |
-| 3 | Public booking page `/book/<slug>`: pick service, date, slot; client details; confirmation and cancel link | |
+| 2 | Pro dashboard: day/week calendar, create/move/cancel appointments, clients, services, opening hours | Done |
+| 3 | Public booking page `/book/<slug>`: pick service, date, slot; client details; confirmation and cancel link | Next |
 | 4 | Accounts and auth, reminders (email/SMS via a provider, stubbed in dev), basic reports | |
 | 5 | End-to-end tests (Playwright), Postgres, deployment | |
 | 6 | Mobile app (Expo/React Native) using the same API | |

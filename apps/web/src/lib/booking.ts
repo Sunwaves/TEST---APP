@@ -114,3 +114,57 @@ export async function updateAppointment(
     return tx.appointment.update({ where: { id }, data, include: { service: true, client: true } });
   });
 }
+
+/** Moves an appointment (staff action): keeps its length, refuses overlaps. */
+export async function rescheduleAppointment(db: PrismaClient, businessId: string, id: string, startsAt: Date) {
+  return db.$transaction(async (tx) => {
+    const existing = await tx.appointment.findFirst({ where: { id, businessId } });
+    if (!existing) throw new BookingError("Appointment not found", 404);
+    if (existing.status !== "BOOKED") {
+      throw new BookingError("Only booked appointments can be moved");
+    }
+
+    const length = existing.endsAt.getTime() - existing.startsAt.getTime();
+    const endsAt = new Date(startsAt.getTime() + length);
+    const clash = await tx.appointment.findFirst({
+      where: { businessId, id: { not: id }, ...BLOCKING, startsAt: { lt: endsAt }, endsAt: { gt: startsAt } },
+    });
+    if (clash) throw new BookingError("That time overlaps another appointment", 409);
+
+    return tx.appointment.update({ where: { id }, data: { startsAt, endsAt }, include: { service: true, client: true } });
+  });
+}
+
+export interface HoursInput {
+  weekday: number;
+  startTime: string;
+  endTime: string;
+}
+
+/** Replaces the weekly opening hours. Windows must be non-empty and not overlap within a day. */
+export async function setWorkingHours(db: PrismaClient, businessId: string, hours: HoursInput[]) {
+  const problem = workingHoursProblem(hours);
+  if (problem) throw new BookingError(problem);
+  return db.$transaction(async (tx) => {
+    await tx.workingHours.deleteMany({ where: { businessId } });
+    await tx.workingHours.createMany({ data: hours.map((h) => ({ ...h, businessId })) });
+    return tx.workingHours.findMany({ where: { businessId }, orderBy: [{ weekday: "asc" }, { startTime: "asc" }] });
+  });
+}
+
+const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/** Returns a human-readable problem with the hours, or null if they are valid. */
+export function workingHoursProblem(hours: HoursInput[]): string | null {
+  for (let day = 0; day < 7; day++) {
+    const windows = hours
+      .filter((h) => h.weekday === day)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+    for (const [i, w] of windows.entries()) {
+      if (w.startTime >= w.endTime) return `${WEEKDAY_NAMES[day]}: ${w.startTime}–${w.endTime} ends before it starts`;
+      const next = windows[i + 1];
+      if (next && next.startTime < w.endTime) return `${WEEKDAY_NAMES[day]}: opening hours overlap`;
+    }
+  }
+  return null;
+}

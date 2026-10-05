@@ -34,6 +34,25 @@ export const appointmentStatus = z.enum(["BOOKED", "COMPLETED", "CANCELLED", "NO
 export const appointmentUpdate = z.object({
   status: appointmentStatus.optional(),
   notes: z.string().trim().max(1000).optional(),
+  startsAt: z.iso.datetime({ offset: true }).transform((s) => new Date(s)).optional(),
+});
+
+export const workingHoursInput = z.array(
+  z.object({ weekday: z.number().int().min(0).max(6), startTime: hhmm, endTime: hhmm }),
+).max(50);
+
+export const businessInput = z.object({
+  name: z.string().trim().min(1).max(100),
+  timezone: z.string().refine((tz) => {
+    try {
+      new Intl.DateTimeFormat("en", { timeZone: tz });
+      return true;
+    } catch {
+      return false;
+    }
+  }, "Unknown timezone"),
+  slotStepMinutes: z.number().int().min(5).max(120),
+  minNoticeMinutes: z.number().int().min(0).max(14 * 24 * 60),
 });
 
 export const availabilityQuery = z.object({

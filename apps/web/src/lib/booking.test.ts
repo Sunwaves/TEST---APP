@@ -1,6 +1,14 @@
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { bookAppointment, BookingError, getSlots, updateAppointment } from "./booking";
+import {
+  bookAppointment,
+  BookingError,
+  getSlots,
+  rescheduleAppointment,
+  setWorkingHours,
+  updateAppointment,
+  workingHoursProblem,
+} from "./booking";
 
 const db = new PrismaClient();
 const now = new Date("2026-12-01T00:00:00Z");
@@ -75,5 +83,38 @@ describe("booking", () => {
     const stranger = await db.client.create({ data: { businessId: other.id, name: "Stranger" } });
     await rejects(bookAppointment(db, businessId, { serviceId, startsAt: at("09:00"), source: "STAFF", clientId: stranger.id }, now), 404);
     await rejects(getSlots(db, other.id, serviceId, monday, now), 404);
+  });
+});
+
+describe("rescheduling", () => {
+  it("moves an appointment, keeping its length, and refuses clashes", async () => {
+    const a = await bookAppointment(db, businessId, { serviceId, startsAt: at("09:00"), source: "STAFF", client: { name: "Ana" } }, now);
+    await bookAppointment(db, businessId, { serviceId, startsAt: at("10:00"), source: "STAFF", client: { name: "Ben" } }, now);
+
+    // Overlapping its own old time is fine.
+    const moved = await rescheduleAppointment(db, businessId, a.id, at("08:30"));
+    expect(moved.endsAt.toISOString()).toBe(at("09:30").toISOString());
+
+    await rejects(rescheduleAppointment(db, businessId, a.id, at("09:45")), 409);
+  });
+
+  it("only moves booked appointments", async () => {
+    const a = await bookAppointment(db, businessId, { serviceId, startsAt: at("09:00"), source: "STAFF", client: { name: "Ana" } }, now);
+    await updateAppointment(db, businessId, a.id, { status: "CANCELLED" });
+    await rejects(rescheduleAppointment(db, businessId, a.id, at("10:00")), 400);
+  });
+});
+
+describe("opening hours", () => {
+  it("validates windows", () => {
+    expect(workingHoursProblem([{ weekday: 1, startTime: "09:00", endTime: "12:00" }, { weekday: 1, startTime: "13:00", endTime: "17:00" }])).toBeNull();
+    expect(workingHoursProblem([{ weekday: 2, startTime: "12:00", endTime: "09:00" }])).toMatch(/Tuesday/);
+    expect(workingHoursProblem([{ weekday: 1, startTime: "09:00", endTime: "13:00" }, { weekday: 1, startTime: "12:00", endTime: "17:00" }])).toMatch(/overlap/);
+  });
+
+  it("replaces the weekly schedule and changes availability", async () => {
+    await setWorkingHours(db, businessId, [{ weekday: 1, startTime: "15:00", endTime: "16:00" }]);
+    expect(times(await getSlots(db, businessId, serviceId, monday, now))).toEqual(["15:00"]);
+    await rejects(setWorkingHours(db, businessId, [{ weekday: 1, startTime: "16:00", endTime: "15:00" }]), 400);
   });
 });
