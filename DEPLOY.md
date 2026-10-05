@@ -57,6 +57,29 @@ The demo salon and demo login are **not** created on the live site.
 - **Real email** (needs your own domain): sign up at <https://resend.com>, verify the domain, create an API key, then add `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `Your Salon <bookings@yourdomain.com>`) in Vercel and redeploy. Until then, messages are simulated and visible in Dashboard → Messages, and **password reset emails are not delivered**.
 - **Real SMS**: Twilio account, then `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`.
 
+## 7. Payments for PRO (Stripe)
+
+Do this in **test mode** first (the toggle at the top of the Stripe dashboard); repeat in live mode when you're ready to charge.
+
+1. Sign up at <https://stripe.com> with your company (SRL/PFA) details.
+2. **Product catalogue → Add product**: name "BookMe PRO", **Recurring**, **Monthly**, price **150 RON**, and under tax behaviour choose **Inclusive** (VAT included). Save, then copy the price ID (`price_…`).
+3. **Developers → API keys**: copy the **Secret key** (`sk_test_…`).
+4. **Developers → Webhooks → Add endpoint**: URL `https://<your-address>/api/stripe/webhook`, events `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`. Copy the **Signing secret** (`whsec_…`).
+5. **Settings → Billing → Customer portal**: turn it on (lets salons update their card, see invoices and cancel).
+6. In Vercel → **Settings → Environment Variables** add `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, then redeploy.
+7. Test it: log in to your salon → **Free · x/20** badge → **Upgrade to PRO** → pay with card `4242 4242 4242 4242`, any future date and any CVC. Back in BookMe the badge turns **PRO** within a few seconds.
+
+Invoices: Stripe emails a receipt/invoice for each payment. Romanian e-Factura isn't automatic; ask your accountant, or connect an invoicing tool such as SmartBill or Oblio.
+
+### Giving a salon PRO for free
+
+```bash
+npm run give-pro -- owner@example.com 365      # PRO for a year
+npm run give-pro -- salon-address off          # take it away again
+```
+
+It uses the database in `apps/web/.env`. For the live site, run it with the live connection string: `DATABASE_URL="<Neon connection string>" DATABASE_URL_UNPOOLED="<same>" npm run give-pro -- …`.
+
 ## How updates go live
 
 - Every push to the **production branch** redeploys the live site after the build succeeds. Vercel uses the repository's default branch; check it under **Settings → Git → Production Branch**.

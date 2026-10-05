@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { hashPassword } from "./auth";
 import { BookingError } from "./booking";
+import { trialEndsAt } from "./plans";
 
 /** Demo owner created by the seed script (password: demo1234). */
 export const DEMO_EMAIL = "demo@goldie.test";
@@ -49,6 +50,7 @@ export async function createAccount(db: PrismaClient, input: SignupInput) {
           slug,
           timezone: input.timezone ?? "Europe/London",
           notifyEmail: email,
+          proUntil: trialEndsAt(), // 14-day PRO trial, no card needed
           workingHours: {
             create: [1, 2, 3, 4, 5]
               .map((weekday) => ({ weekday, startTime: "09:00", endTime: "17:00" }))

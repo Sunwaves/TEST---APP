@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { bookAppointment, BookingError, cancelByToken } from "@/lib/booking";
 import { prisma } from "@/lib/db";
-import { notifyAfterResponse, notifyBooked, notifyCancelled } from "@/lib/messages";
+import { alertLimitReached, notifyAfterResponse, notifyBooked, notifyCancelled } from "@/lib/messages";
+import { LimitReachedError } from "@/lib/plans";
 import { clientIp, enforceLimit } from "@/lib/limits";
 import { appOrigin } from "@/lib/session";
 import { businessBySlug } from "@/lib/public";
@@ -46,6 +47,12 @@ export async function createOnlineBooking(slug: string, _prev: PublicFormState, 
     const origin = await appOrigin();
     notifyAfterResponse(() => notifyBooked(prisma, appointment.id, origin));
   } catch (err) {
+    if (err instanceof LimitReachedError) {
+      const business = await businessBySlug(slug);
+      const origin = await appOrigin();
+      notifyAfterResponse(() => alertLimitReached(prisma, business.id, origin));
+      return { error: `${err.message}${business.phone ? ` Phone: ${business.phone}` : ""}` };
+    }
     return { error: message(err) };
   }
   redirect(`/booking/${token}?new=1`);

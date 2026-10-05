@@ -21,7 +21,7 @@ export default async function ServicesPage({ searchParams }: PageProps<"/dashboa
       <PageHeader title="Services" subtitle="What clients can book, how long it takes and what it costs." />
       {welcome && (
         <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
-          <p className="font-medium">Welcome to {business.name}!</p>
+          <p className="font-medium">Welcome to {business.name}! You&apos;re on a free 14-day PRO trial.</p>
           <p className="mt-1">
             Start by adding the services you offer. Then check your opening hours in{" "}
             <Link href="/dashboard/settings" className="underline">

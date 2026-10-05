@@ -12,35 +12,42 @@ datasource db {
 }
 
 model Business {
-  id                   String         @id @default(cuid())
-  name                 String
-  slug                 String         @unique // public booking page: /book/<slug>
-  timezone             String         @default("Europe/London")
-  slotStepMinutes      Int            @default(15)
-  minNoticeMinutes     Int            @default(60)
-  maxAdvanceDays       Int            @default(60) // how far ahead clients can book online
-  phone                String?
-  address              String?
+  id                    String         @id @default(cuid())
+  name                  String
+  slug                  String         @unique // public booking page: /book/<slug>
+  timezone              String         @default("Europe/London")
+  slotStepMinutes       Int            @default(15)
+  minNoticeMinutes      Int            @default(60)
+  maxAdvanceDays        Int            @default(60) // how far ahead clients can book online
+  phone                 String?
+  address               String?
   // Public salon page
-  description          String? // "About" text
-  avatarImageId        String? // profile photo (Image.id)
-  bannerImageId        String? // banner (Image.id)
+  description           String? // "About" text
+  avatarImageId         String? // profile photo (Image.id)
+  bannerImageId         String? // banner (Image.id)
+  // Plan: PRO while a Stripe subscription is active, or until proUntil (trial / given by the admin)
+  proUntil              DateTime?
+  stripeCustomerId      String?        @unique
+  stripeSubscriptionId  String?
+  subscriptionStatus    String? // Stripe status: active, trialing, past_due, canceled, ...
+  subscriptionPeriodEnd DateTime?
+  limitAlertedAt        DateTime? // last "a client couldn't book online" alert, to avoid repeats
   // Notifications
-  notifyEmail          String? // where new-booking / cancellation alerts go
-  remindersEnabled     Boolean        @default(true)
-  reminderHoursBefore  Int            @default(24)
-  confirmationTemplate String? // null = built-in default
-  reminderTemplate     String?
-  cancellationTemplate String?
-  rescheduleTemplate   String?
-  createdAt            DateTime       @default(now())
-  services             Service[]
-  clients              Client[]
-  appointments         Appointment[]
-  workingHours         WorkingHours[]
-  users                User[]
-  messages             Message[]
-  images               Image[]
+  notifyEmail           String? // where new-booking / cancellation alerts go
+  remindersEnabled      Boolean        @default(true)
+  reminderHoursBefore   Int            @default(24)
+  confirmationTemplate  String? // null = built-in default
+  reminderTemplate      String?
+  cancellationTemplate  String?
+  rescheduleTemplate    String?
+  createdAt             DateTime       @default(now())
+  services              Service[]
+  clients               Client[]
+  appointments          Appointment[]
+  workingHours          WorkingHours[]
+  users                 User[]
+  messages              Message[]
+  images                Image[]
 }
 
 model User {

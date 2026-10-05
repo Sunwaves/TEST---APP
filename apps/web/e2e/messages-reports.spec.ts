@@ -26,7 +26,7 @@ test("online booking and cancellation produce the right messages", async ({ page
   await expect.poll(() => summaries(page).then((l) => l.join("\n")), { intervals: [500, 1000, 2000] }).toMatch(/New booking alert · Email to demo@goldie.test.*Sent/);
   const list = (await summaries(page)).join("\n");
   expect(list).toMatch(/Confirmation · Email to mia@example.com.*Sent/);
-  expect(list).toMatch(/Confirmation · SMS to 07700900123.*Sent/);
+  expect(list).not.toMatch(/SMS to/); // the demo salon is on the Free plan: SMS is a PRO feature
   expect(list).toMatch(/Reminder · Email to mia@example.com.*Scheduled/);
   await page.locator("main li summary", { hasText: "Confirmation · Email to mia" }).click();
   // Email and SMS bodies are identical; only the opened (email) one is visible.

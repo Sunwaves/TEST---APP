@@ -1,6 +1,7 @@
 import type { Appointment, Business, Client, Message, PrismaClient, Service } from "@prisma/client";
 import { formatDayLabel } from "../format";
 import { toZonedHHMM, toZonedIsoDate } from "../time";
+import { planOf } from "../plans";
 import { send } from "./drivers";
 import { DEFAULT_TEMPLATES, renderTemplate, type TemplateKind } from "./templates";
 
@@ -54,7 +55,7 @@ async function queueForClient(db: PrismaClient, a: Full, kind: TemplateKind, ori
   const base = { businessId: a.businessId, appointmentId: a.id, kind: kind.toUpperCase(), body, sendAt };
   const rows = [
     ...(a.client.email ? [{ ...base, channel: "EMAIL", recipient: a.client.email, subject }] : []),
-    ...(a.client.phone ? [{ ...base, channel: "SMS", recipient: a.client.phone }] : []),
+    ...(a.client.phone && planOf(a.business).pro ? [{ ...base, channel: "SMS", recipient: a.client.phone }] : []),
   ];
   if (rows.length) await db.message.createMany({ data: rows });
 }
@@ -123,6 +124,29 @@ export async function notifyStatusChange(db: PrismaClient, appointmentId: string
 /** Completed / no-show: nothing to send, but pending reminders must not go out. */
 export async function notifyClosed(db: PrismaClient, appointmentId: string) {
   await skipPendingReminders(db, appointmentId);
+}
+
+/**
+ * A client tried to book online but the free monthly limit is used up: tell the owner,
+ * at most once a day, with a link to upgrade.
+ */
+export async function alertLimitReached(db: PrismaClient, businessId: string, origin: string, now = new Date()) {
+  const business = await db.business.findUniqueOrThrow({ where: { id: businessId } });
+  if (!business.notifyEmail) return;
+  if (business.limitAlertedAt && now.getTime() - business.limitAlertedAt.getTime() < 24 * 60 * 60 * 1000) return;
+  await db.$transaction([
+    db.business.update({ where: { id: businessId }, data: { limitAlertedAt: now } }),
+    db.message.create({
+      data: {
+        businessId,
+        kind: "LIMIT_ALERT",
+        channel: "EMAIL",
+        recipient: business.notifyEmail,
+        subject: "A client couldn't book online",
+        body: `A client just tried to book online, but ${business.name} has used all its free bookings for this month, so online booking is paused until the 1st.\n\nUpgrade to PRO for unlimited bookings: ${origin}/dashboard/billing`,
+      },
+    }),
+  ]);
 }
 
 export async function queuePasswordReset(db: PrismaClient, user: { email: string; businessId: string; name: string }, link: string) {

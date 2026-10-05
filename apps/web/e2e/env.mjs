@@ -7,4 +7,8 @@ export const e2eEnv = {
   DATABASE_URL_UNPOOLED: E2E_DATABASE_URL,
   APP_URL: `http://localhost:${E2E_PORT}`,
   DISABLE_MESSAGE_TIMER: "1", // messages are delivered right after each request; no background timer
+  // Stripe: fake keys are enough to verify webhook signatures (no network). No STRIPE_PRICE_ID,
+  // so checkout shows "payments not set up", which the tests check.
+  STRIPE_SECRET_KEY: "sk_test_e2e_dummy",
+  STRIPE_WEBHOOK_SECRET: "whsec_e2e_dummy_secret",
 };

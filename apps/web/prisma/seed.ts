@@ -97,6 +97,7 @@ async function main() {
           endsAt: addMinutes(startsAt, minutes),
           status: statuses[n % statuses.length],
           source: n % 3 === 0 ? "ONLINE" : "STAFF",
+          createdAt: addMinutes(startsAt, -3 * 24 * 60), // booked a few days ahead, so history doesn't count toward this month's free limit
           manageToken: randomBytes(18).toString("base64url"),
         },
       });

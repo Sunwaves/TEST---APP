@@ -8,6 +8,7 @@ import { bookingWindow } from "@/lib/booking";
 import { prisma } from "@/lib/db";
 import { imageUrl } from "@/lib/images";
 import { describeDay, openNow, WEEKDAYS_MONDAY_FIRST } from "@/lib/opening";
+import { usageOf } from "@/lib/plans";
 import { FloatingThemeToggle } from "@/components/theme-toggle";
 
 async function load(slug: string) {
@@ -37,6 +38,7 @@ export default async function SalonPage({ params }: PageProps<"/book/[slug]">) {
 
   const hours = business.workingHours;
   const status = openNow(hours, business.timezone);
+  const usage = await usageOf(prisma, business);
   const phoneHref = business.phone ? `tel:${business.phone.replace(/[^\d+]/g, "")}` : null;
 
   return (
@@ -91,6 +93,11 @@ export default async function SalonPage({ params }: PageProps<"/book/[slug]">) {
               }))}
               openWeekdays={[...new Set(hours.map((h) => h.weekday))]}
               window={bookingWindow(business)}
+              pausedMessage={
+                usage.onlinePaused
+                  ? `Online booking is paused for this month.${business.phone ? ` Please call ${business.phone} to book.` : " Please contact the salon to book."}`
+                  : undefined
+              }
             />
           </div>
 
@@ -145,12 +152,14 @@ export default async function SalonPage({ params }: PageProps<"/book/[slug]">) {
           </aside>
         </div>
 
-        <p className="mt-8 text-center text-xs text-stone-500">
-          Booking by{" "}
-          <Link href="/" className="underline">
-            BookMe
-          </Link>
-        </p>
+        {!usage.pro && (
+          <p className="mt-8 text-center text-xs text-stone-500">
+            Booking by{" "}
+            <Link href="/" className="underline">
+              BookMe
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,15 +1,13 @@
 import { randomBytes } from "node:crypto";
 import type { Business, Prisma, PrismaClient } from "@prisma/client";
 import { availableSlots } from "./availability";
+import { BookingError } from "./errors";
+import { assertCanBook } from "./plans";
 import { addMinutes, toZonedIsoDate, weekdayOf, zonedTimeToUtc } from "./time";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
-export class BookingError extends Error {
-  constructor(message: string, readonly status: number = 400) {
-    super(message);
-  }
-}
+export { BookingError } from "./errors";
 
 /** Appointments that still block time on the calendar. */
 const BLOCKING = { status: { in: ["BOOKED", "COMPLETED"] } };
@@ -61,6 +59,8 @@ export async function bookAppointment(db: PrismaClient, businessId: string, inpu
 
     const startsAt = input.startsAt;
     const endsAt = addMinutes(startsAt, service.durationMinutes + service.bufferMinutes);
+
+    await assertCanBook(tx, business, input.source, now);
 
     if (input.source === "ONLINE") {
       const date = toZonedIsoDate(startsAt, business.timezone);

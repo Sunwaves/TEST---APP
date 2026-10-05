@@ -13,6 +13,7 @@ const KIND_LABELS: Record<string, string> = {
   NEW_BOOKING_ALERT: "New booking alert",
   CANCELLATION_ALERT: "Cancellation alert",
   PASSWORD_RESET: "Password reset",
+  LIMIT_ALERT: "Booking limit alert",
 };
 
 const STATUS: Record<string, { label: string; className: string }> = {

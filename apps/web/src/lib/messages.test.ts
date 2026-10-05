@@ -19,6 +19,7 @@ beforeEach(async () => {
       slug: "glow",
       minNoticeMinutes: 0,
       notifyEmail: "owner@glow.test",
+      proUntil: new Date("2030-01-01T00:00:00Z"), // PRO: clients get SMS as well as email
       workingHours: { create: [{ weekday: 1, startTime: "09:00", endTime: "17:00" }] },
     },
   });
@@ -115,6 +116,16 @@ describe("notifications", () => {
 
     await notifyStatusChange(db, a.id, "CANCELLED", "BOOKED", origin);
     expect(await db.message.count({ where: { kind: "CONFIRMATION" } })).toBe(4);
+  });
+});
+
+describe("plans", () => {
+  it("free salons send email only; SMS is a PRO feature", async () => {
+    await db.business.update({ where: { id: businessId }, data: { proUntil: null } });
+    const a = await book("ONLINE");
+    await notifyBooked(db, a.id, origin, now);
+    const channels = new Set((await messages()).filter((m) => m.kind !== "NEW_BOOKING_ALERT").map((m) => m.channel));
+    expect([...channels]).toEqual(["EMAIL"]);
   });
 });
 

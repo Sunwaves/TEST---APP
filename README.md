@@ -56,6 +56,14 @@ Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. CI run
 | 5 | Postgres, rate limiting and security headers, browser tests in CI, Vercel + Neon deployment | Done (deploy steps in [DEPLOY.md](DEPLOY.md)) |
 | 6 | Mobile app (Expo/React Native) using the same API | |
 
+## Plans
+
+- **Free**: 20 bookings a month (new, non-cancelled bookings made that month, in the salon's timezone; resets on the 1st), email messages, "Booking by BookMe" on the salon page.
+- **PRO, 150 RON/month, VAT included**: unlimited bookings, SMS to clients, no BookMe branding.
+- New salons get a **14-day PRO trial**. Owners see a "Free · 12/20" badge, a warning from 15, and at 20 online booking pauses politely (the salon page asks clients to call) and the owner is alerted once a day; staff can still add 3. Data is never deleted on downgrade.
+- Payments: Stripe Checkout + Customer Portal; a webhook keeps each salon's plan in sync (`/api/stripe/webhook`). Setup in [DEPLOY.md](DEPLOY.md) step 7. Free PRO for anyone: `npm run give-pro -- <email> <days|off>`.
+- The numbers live in `apps/web/src/lib/plans.ts`.
+
 ## Currency and theme
 
 - All prices are in Romanian lei (RON), shown as "1.234,50 RON". Price inputs accept "120", "99,50" or "99.50". The currency is one constant (`CURRENCY` in `apps/web/src/lib/format.ts`).

@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "start": "node apps/web/scripts/local.mjs",
-    "reset-demo": "cd apps/web && npx prisma db seed"
+    "reset-demo": "cd apps/web && npx prisma db seed",
+    "give-pro": "cd apps/web && npx tsx scripts/give-pro.ts"
   }
 }
