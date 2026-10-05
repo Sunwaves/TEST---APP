@@ -42,3 +42,37 @@ export async function expectNoSidewaysScroll(page: Page) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow, `page is ${overflow}px wider than the screen`).toBeLessThanOrEqual(0);
 }
+
+/** A real PNG file of one colour (with a stripe so crops are visible), for upload tests. */
+export function makePng(width: number, height: number, rgb: [number, number, number]): Buffer {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const zlib = require("node:zlib") as typeof import("node:zlib");
+  const chunk = (type: string, data: Buffer) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    const body = Buffer.concat([Buffer.from(type), data]);
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(zlib.crc32(body));
+    return Buffer.concat([len, body, crc]);
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8; // bit depth
+  header[9] = 2; // RGB
+  const rows: Buffer[] = [];
+  for (let y = 0; y < height; y++) {
+    const row = Buffer.alloc(1 + width * 3);
+    for (let x = 0; x < width; x++) {
+      const stripe = Math.abs(x - y) < Math.max(4, width / 40);
+      row.set(stripe ? [255, 255, 255] : rgb, 1 + x * 3);
+    }
+    rows.push(row);
+  }
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", header),
+    chunk("IDAT", zlib.deflateSync(Buffer.concat(rows))),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
+}

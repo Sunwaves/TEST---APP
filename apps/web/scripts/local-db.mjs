@@ -45,7 +45,16 @@ export async function startLocalPostgres() {
     onLog: () => {},
   });
   if (!existsSync(join(dataDir, "PG_VERSION"))) await server.initialise();
-  await server.start();
+  // A server that was just stopped can hold its files for a moment; retry briefly before giving up.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await server.start();
+      break;
+    } catch (err) {
+      if (attempt >= 10) throw err ?? new Error("Could not start the local database");
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
   return () => server.stop();
 }
 

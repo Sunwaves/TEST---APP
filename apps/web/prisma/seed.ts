@@ -26,6 +26,8 @@ async function main() {
       slug: "goldie-test-salon",
       timezone,
       address: "12 Example Street, London",
+      description:
+        "A friendly neighbourhood salon for cuts, colour and nails. We take our time, use gentle products and love a good chat.\n\nNew clients welcome. Not sure what to book? Choose a haircut and tell us what you'd like in the notes.",
       phone: "+44 20 7946 0000",
       workingHours: {
         create: [1, 2, 3, 4, 5].flatMap((weekday) => [

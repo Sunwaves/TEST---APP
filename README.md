@@ -78,6 +78,10 @@ Sending is **simulated** by default: every message is recorded in **Dashboard â†
 
 `/dashboard/reports`: revenue (completed appointments), still-booked value, no-show rate, new vs returning clients, revenue per day/week, appointments by status and source, top services and top clients, for any date range.
 
+## Salon page (`/book/<slug>`)
+
+Each salon has a public page styled like a social profile: banner, round profile photo, name, address and an "Open now / Closed" badge, an About section, service cards (each opens the booking steps), opening hours and a map link. Owners edit it under **Dashboard â†’ Salon page**: upload or remove the photo and banner (cropped and resized in the browser; JPEG/PNG/WebP up to 2 MB, checked on the server) and write the description. Pictures are stored in Postgres, so no separate file storage is needed.
+
 ## Online booking (`/book/<slug>`)
 
 Demo salon: `/book/goldie-test-salon`. Clients pick a service, a day and a free time, then leave their name and an email or phone number.

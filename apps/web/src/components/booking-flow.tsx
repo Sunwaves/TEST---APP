@@ -6,7 +6,14 @@ import { addDays, formatDayLabel, formatDuration, formatPrice } from "@/lib/form
 import { submitKeepingValues } from "./action-form";
 import { buttonClass, Field, Input, Textarea } from "./ui";
 
-interface Service {
+type Service = BookableService;
+
+type Slot = { startsAt: string; time: string };
+type SlotsResult = { key: string } & ({ status: "error" } | { status: "ready"; slots: Slot[] });
+
+const DAYS_SHOWN = 7;
+
+export interface BookableService {
   id: string;
   name: string;
   description: string | null;
@@ -14,27 +21,28 @@ interface Service {
   priceCents: number;
 }
 
-type Slot = { startsAt: string; time: string };
-type SlotsResult = { key: string } & ({ status: "error" } | { status: "ready"; slots: Slot[] });
-
-const DAYS_SHOWN = 7;
-
 export function BookingFlow({
   slug,
   services,
   openWeekdays,
   window,
+  initialService,
+  onExit,
 }: {
   slug: string;
   services: Service[];
   openWeekdays: number[];
   window: { first: string; last: string };
+  /** Start at "pick a time" for this service (chosen on the salon page). */
+  initialService?: Service;
+  /** Where "Back" goes from the first step shown; defaults to the service list. */
+  onExit?: () => void;
 }) {
-  const [service, setService] = useState<Service | null>(null);
+  const [service, setService] = useState<Service | null>(initialService ?? null);
   const [weekStart, setWeekStart] = useState(window.first);
   const [date, setDate] = useState<string | null>(null);
   const [slot, setSlot] = useState<Slot | null>(null);
-  const [step, setStep] = useState<"service" | "time" | "details">("service");
+  const [step, setStep] = useState<"service" | "time" | "details">(initialService ? "time" : "service");
   const [result, setResult] = useState<SlotsResult | null>(null);
   const [state, formAction, pending] = useActionState(createOnlineBooking.bind(null, slug), {});
 
@@ -93,7 +101,7 @@ export function BookingFlow({
 
   if (step === "time" || !slot || !selectedDate) {
     return (
-      <Step title="Pick a time" number={2} onBack={() => setStep("service")} summary={`${service.name} · ${formatDuration(service.durationMinutes)}`}>
+      <Step title="Pick a time" number={2} onBack={() => (onExit ? onExit() : setStep("service"))} summary={`${service.name} · ${formatDuration(service.durationMinutes)}`}>
         <div className="mb-3 flex items-center justify-between">
           <button
             type="button"

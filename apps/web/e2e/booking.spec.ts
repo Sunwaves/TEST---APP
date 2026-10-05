@@ -12,7 +12,7 @@ let bookedTime = "";
 test("a client books online from a phone", async ({ page }) => {
   await page.goto(`/book/${DEMO.slug}`);
   await expect(page.getByRole("heading", { name: "Goldie Test Salon" })).toBeVisible();
-  await expect(page.getByText("12 Example Street")).toBeVisible();
+  await expect(page.getByText("12 Example Street").first()).toBeVisible(); // header and "Find us"
   await page.getByRole("button", { name: /Gel manicure/ }).click();
   await expect(page.getByText("Step 2 of 3")).toBeVisible();
   await expect(page.getByRole("button", { name: /^Sunday/ }).first()).toBeDisabled();

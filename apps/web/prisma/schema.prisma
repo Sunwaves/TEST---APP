@@ -21,6 +21,10 @@ model Business {
   maxAdvanceDays       Int            @default(60) // how far ahead clients can book online
   phone                String?
   address              String?
+  // Public salon page
+  description          String? // "About" text
+  avatarImageId        String? // profile photo (Image.id)
+  bannerImageId        String? // banner (Image.id)
   // Notifications
   notifyEmail          String? // where new-booking / cancellation alerts go
   remindersEnabled     Boolean        @default(true)
@@ -36,6 +40,7 @@ model Business {
   workingHours         WorkingHours[]
   users                User[]
   messages             Message[]
+  images               Image[]
 }
 
 model User {
@@ -163,4 +168,18 @@ model RateLimit {
   resetAt DateTime
 
   @@index([resetAt])
+}
+
+// Uploaded pictures (salon profile photo and banner), resized in the browser before upload.
+// Stored in Postgres so deployments need no separate file storage.
+model Image {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  kind        String // AVATAR | BANNER
+  contentType String // image/jpeg | image/png | image/webp
+  data        Bytes
+  createdAt   DateTime @default(now())
+
+  @@index([businessId])
 }

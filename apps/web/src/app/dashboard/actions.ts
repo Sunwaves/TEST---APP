@@ -262,3 +262,11 @@ export async function updateNotifications(_prev: FormState, fd: FormData): Promi
     });
   });
 }
+
+export async function updateProfile(_prev: FormState, fd: FormData): Promise<FormState> {
+  const business = await currentBusiness();
+  return run(() => {
+    const description = z.string().max(1000, "Keep the description under 1000 characters").optional().parse(field(fd, "description"));
+    return prisma.business.update({ where: { id: business.id }, data: { description: description ?? null } });
+  });
+}

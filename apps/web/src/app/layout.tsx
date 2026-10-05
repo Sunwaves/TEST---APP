@@ -12,7 +12,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Absolute base for link-preview images (e.g. a salon's banner when its page is shared).
+const siteUrl =
+  process.env.APP_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: { default: "BookMe", template: "%s · BookMe" },
   description: "Appointment booking for beauty professionals",
 };
